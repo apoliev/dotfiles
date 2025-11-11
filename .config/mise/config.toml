@@ -1,0 +1,13 @@
+[tools]
+bat = "latest"
+bat-extras = "latest"
+fd = "latest"
+fzf = "latest"
+node = "18.20.4"
+python = "3"
+ripgrep = "latest"
+ruby = "3.3.5"
+zoxide = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["ruby"]
