@@ -11,5 +11,6 @@ mkdir -p $HOME/.local/lib &&
 show_success "Success\n") || (show_error 'Error' && exit 1)
 
 (prompt_txt 'Install prompt_utils...' &&
-cp $DIR/prompt_utils.sh $HOME/.local/lib/ &&
+rm -rf $HOME/.local/lib/prompt_utils.sh &&
+ln -s $DIR/prompt_utils.sh $HOME/.local/lib/prompt_utils.sh &&
 show_success "Success") || (show_error 'Error' && exit 1)

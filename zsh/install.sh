@@ -29,5 +29,6 @@ fi
 
 # Copying themes
 (prompt_txt 'Copying themes...' &&
-cp -R $DIR/themes/* $HOME/.oh-my-zsh/custom/themes &&
+rm -rf $HOME/.oh-my-zsh/custom/themes/bira-shell.zsh-theme &&
+ln -s $DIR/themes/bira-shell.zsh-theme $HOME/.oh-my-zsh/custom/themes/bira-shell.zsh-theme &&
 show_success "Success\n") || (show_error 'Error' && exit 1)

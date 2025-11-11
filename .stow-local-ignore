@@ -4,6 +4,7 @@ libs.list
 README.md
 scripts
 shell
+termux
 tmux
 vim
 zsh
