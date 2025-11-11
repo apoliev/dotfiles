@@ -2,7 +2,7 @@
 
 Configs for linux
 
-## Installing libraries and programs
+## Installing
 
 ### Ubuntu
 
