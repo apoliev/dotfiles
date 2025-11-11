@@ -9,3 +9,9 @@ Configs for linux
 ```bash
 sh -c scripts/ubuntu.sh
 ```
+
+### Termux
+
+```bash
+sh -c scripts/termux.sh
+```
