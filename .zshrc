@@ -15,4 +15,6 @@ plugins=(
 
 setopt interactivecomments
 
+alias copy='xclip -i -sel c'
+
 source $ZSH/oh-my-zsh.sh
