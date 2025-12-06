@@ -8,6 +8,7 @@ node = "18.20.4"
 python = "3"
 ripgrep = "latest"
 ruby = "3.3.5"
+uv = "latest"
 zoxide = "latest"
 
 [settings]
