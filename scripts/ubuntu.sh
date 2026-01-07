@@ -14,6 +14,10 @@ show_success "Success\n") || (show_error 'Error' && exit 1)
 (prompt_txt 'Install programs...' &&
 sudo apt install -y $(cat $DIR/../libs.list) &&
 curl https://mise.jdx.dev/install.sh | sh &&
+mv $HOME/.zshrc $HOME/.zshrc.bak &&
+mv $HOME/.tmux.conf $HOME/.tmux.conf.bak &&
+mv $HOME/.vimrc $HOME/.vimrc.bak &&
+mv $HOME/.irbrc $HOME/.irbrc.bak &&
 stow -d $DIR/../ -t $HOME . &&
 sh -c "$HOME/.local/bin/mise install" &&
 show_success "Success\n") || (show_error 'Error' && exit 1)
