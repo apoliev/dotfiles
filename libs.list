@@ -23,6 +23,7 @@ ncdu
 nmap
 openssh-server
 pkg-config
+ripgrep
 rsync
 rustc
 stow
