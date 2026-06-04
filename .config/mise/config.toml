@@ -12,4 +12,4 @@ ruby = "3.3.5"
 zoxide = "latest"
 
 [settings]
-idiomatic_version_file_enable_tools = ["ruby"]
+idiomatic_version_file_enable_tools = ["ruby", "node"]
