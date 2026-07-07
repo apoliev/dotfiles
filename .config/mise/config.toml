@@ -5,10 +5,10 @@ fd = "latest"
 fzf = "latest"
 jq = "latest"
 lnav = "latest"
-node = "18.20.4"
-python = "3"
+node = "latest"
+python = "latest"
 ripgrep = "latest"
-ruby = "3.3.5"
+ruby = "latest"
 zoxide = "latest"
 
 [settings]
