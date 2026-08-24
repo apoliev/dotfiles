@@ -18,6 +18,7 @@ libssl-dev
 libtiff-dev
 libxml2-dev
 libyaml-dev
+lnav
 make
 ncdu
 nmap
