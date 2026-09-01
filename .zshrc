@@ -1,5 +1,10 @@
 export GPG_TTY=$(tty)
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+
+if [ -d "$HOME/.local/share/mise/shims" ]; then
+  export PATH="$HOME/.local/share/mise/shims:$PATH"
+fi
+
 export ZOXIDE_CMD_OVERRIDE=cd
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -7,14 +12,20 @@ ZSH_THEME="bira-shell"
 
 plugins=(
   git
-  mise
   fzf-tab
   qrcode
-  zoxide
+  copy
 )
 
-setopt interactivecomments
+if command -v zoxide >/dev/null 2>&1; then
+  plugins+=(zoxide)
+fi
 
-alias copy='xclip -i -sel c'
+# mise is not available on Termux
+if [ -z "$TERMUX_VERSION" ] && command -v mise >/dev/null 2>&1; then
+  plugins+=(mise)
+fi
+
+setopt interactivecomments
 
 source $ZSH/oh-my-zsh.sh

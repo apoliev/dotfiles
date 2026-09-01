@@ -17,6 +17,6 @@ else
 fi
 
 (prompt_txt 'Install or update plugins...' &&
-sh -c $HOME/.tmux/plugins/tpm/bin/install_plugins &&
-sh -c "$HOME/.tmux/plugins/tpm/bin/update_plugins all"
+bash "$HOME/.tmux/plugins/tpm/bin/install_plugins" &&
+bash "$HOME/.tmux/plugins/tpm/bin/update_plugins" all &&
 show_success "Success\n") || (show_error 'Error' && exit 1)

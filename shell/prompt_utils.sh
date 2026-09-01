@@ -15,3 +15,21 @@ show_warn() {
 prompt_txt() {
   echo -e "\e[33m$1\e[0m"
 }
+
+backup_once() {
+  local target="$1"
+  local backup="${target}.bak"
+
+  if [ ! -e "$target" ] || [ -L "$target" ]; then
+    return 0
+  fi
+
+  if [ -e "$backup" ]; then
+    show_warn "'$target' и '$backup' уже существуют\n"
+    return 1
+  fi
+
+  mv "$target" "$backup"
+  show_warn "Существующий файл '$target' сохранён как '$backup'\n"
+  return 0
+}

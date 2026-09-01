@@ -3,25 +3,54 @@
 set -e
 
 DIR="$(dirname "$(readlink -f "$0")")"
+TERMUX_ROOT="$DIR/../termux"
+REPO_ROOT="$DIR/.."
 
-source $DIR/../shell/prompt_utils.sh
+source "$REPO_ROOT/shell/prompt_utils.sh"
 
-(prompt_txt 'Update all...' && pkg upgrade
-show_success "Success\n") || (show_error 'Error' && exit 1)
+# ---- Steps ---------------------------------------------------------------
 
-(prompt_txt 'Install programs...' &&
-pkg install $(cat $DIR/../termux/libs.list) &&
-stow -d $DIR/../termux/ -t $HOME . &&
-show_success "Success\n") || (show_error 'Error' && exit 1)
+update_system() {
+  prompt_txt 'Update all...'
+  pkg upgrade ||
+    { show_error 'pkg upgrade failed'; return 1; }
+  show_success "Success\n"
+}
 
-# Templates for shell
-prompt_txt "\nLoading shell configs..." && sh -c $DIR/../shell/install.sh
+install_system_packages() {
+  prompt_txt 'Install programs...'
+  pkg install $(cat "$TERMUX_ROOT/libs.list") ||
+    { show_error 'Failed to install packages'; return 1; }
+  show_success "Success\n"
+}
 
-# Templates for zsh
-prompt_txt "\nLoading zsh configs..." && sh -c $DIR/../zsh/install.sh
+stow_home() {
+  prompt_txt 'Stowing dotfiles...'
 
-# Templates for vim
-prompt_txt "\nLoading vim configs..." && sh -c $DIR/../vim/install.sh
+  backup_once "$HOME/.zshrc"
+  backup_once "$HOME/.tmux.conf"
+  backup_once "$HOME/.vimrc"
 
-# Templates for tmux
-prompt_txt "\nLoading tmux configs..." && sh -c $DIR/../tmux/install.sh
+  stow -d "$REPO_ROOT" -t "$HOME" . ||
+    { show_error 'stow failed — resolve the conflicts listed above'; return 1; }
+
+  show_success "Success\n"
+}
+
+run_template() {
+  local name="$1"
+  local script="$2"
+  prompt_txt "Loading ${name} configs..."
+  bash "$script"
+}
+
+# ---- Main ----------------------------------------------------------------
+
+update_system
+install_system_packages
+stow_home
+
+run_template shell "$REPO_ROOT/shell/install.sh"
+run_template zsh "$REPO_ROOT/zsh/install.sh"
+run_template vim "$REPO_ROOT/vim/install.sh"
+run_template tmux "$REPO_ROOT/tmux/install.sh"
