@@ -11,10 +11,11 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="bira-shell"
 
 plugins=(
-  git
-  fzf-tab
-  qrcode
   copy
+  fzf
+  fzf-tab
+  git
+  qrcode
 )
 
 if command -v zoxide >/dev/null 2>&1; then
@@ -27,5 +28,7 @@ if [ -z "$TERMUX_VERSION" ] && command -v mise >/dev/null 2>&1; then
 fi
 
 setopt interactivecomments
+
+alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 
 source $ZSH/oh-my-zsh.sh
