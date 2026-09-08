@@ -1,9 +1,11 @@
 [tools]
+"aqua:YS-L/csvlens" = "latest"
 bat = "latest"
 bat-extras = "latest"
 fd = "latest"
 fzf = "latest"
 jq = "latest"
+llmfit = "latest"
 lnav = "latest"
 node = "latest"
 python = "latest"
