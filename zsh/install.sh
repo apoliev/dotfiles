@@ -25,6 +25,12 @@ else
   prompt_txt 'Installing Oh My Zsh...'
   RUNZSH=no CHSH=no bash "$tmp_installer" ||
     { show_error 'Failed to install Oh My Zsh'; exit 1; }
+
+  # oh-my-zsh overwrites ~/.zshrc (even a stowed symlink) with its template —
+  # put the repo config back in place
+  rm -f "$HOME/.zshrc"
+  ln -s "$DIR/../.zshrc" "$HOME/.zshrc" ||
+    { show_error 'Failed to restore stowed ~/.zshrc'; exit 1; }
 fi
 
 # vendor plugin: fzf-tab (shallow clone, updated in place when possible)

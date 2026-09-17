@@ -38,6 +38,8 @@ set default shell (`chsh -s zsh`) → stow →
 - zsh: oh-my-zsh; custom `copy` plugin + `bira-shell` theme (`zsh/custom`,
   `zsh/themes`) are symlinked into the oh-my-zsh custom dir by `zsh/install.sh`.
   New oh-my-zsh plugins must also be added to `plugins=(...)` in `.zshrc`.
+  A fresh omz install overwrites `~/.zshrc` with its template — `zsh/install.sh`
+  re-links the stowed one right after.
 
 ## Script conventions
 
