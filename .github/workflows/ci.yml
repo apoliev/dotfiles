@@ -1,5 +1,6 @@
 name: CI
 
+# Runs on every push (any branch) and every pull request.
 on:
   push:
   pull_request:
