@@ -26,6 +26,7 @@ pkg-config
 ripgrep
 rsync
 rustc
+shellcheck
 stow
 tmux
 unzip

@@ -4,6 +4,7 @@ set -e
 
 DIR="$(dirname "$(readlink -f "$0")")"
 
+# shellcheck disable=SC1091
 source "$DIR/../shell/prompt_utils.sh"
 
 CUSTOM_DIR="$HOME/.oh-my-zsh/custom"

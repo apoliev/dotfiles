@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck stow zsh
+
+      - name: Shellcheck
+        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh
+
+      - name: Tests
+        run: bash tests/run_tests.sh
+
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TERM: xterm-256color
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow zsh vim tmux
+
+      - name: Stow into $HOME
+        run: stow -d . -t "$HOME" .
+
+      - name: Run all install scripts
+        run: |
+          bash shell/install.sh
+          bash zsh/install.sh
+          bash vim/install.sh
+          bash tmux/install.sh
+
+      - name: Assert installed artifacts
+        run: |
+          test -L "$HOME/.zshrc"
+          test -L "$HOME/.vimrc"
+          test -L "$HOME/.tmux.conf"
+          test -f "$HOME/.oh-my-zsh/oh-my-zsh.sh"
+          test -d "$HOME/.oh-my-zsh/custom/plugins/fzf-tab/.git"
+          test -L "$HOME/.oh-my-zsh/custom/plugins/copy"
+          test -L "$HOME/.oh-my-zsh/custom/themes/bira-shell.zsh-theme"
+          test -L "$HOME/.local/lib/prompt_utils.sh"
+          test -f "$HOME/.vim/autoload/plug.vim"
+          test -d "$HOME/.vim/pack/josuegaleas/start/jay/.git"
+          test -d "$HOME/.tmux/plugins/tpm/.git"
+          test -d "$HOME/.tmux/plugins/tmux-sensible/.git"
+
+      - name: Kill tmux server
+        run: tmux kill-server 2>/dev/null || true

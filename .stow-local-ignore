@@ -1,10 +1,13 @@
 .git
+AGENTS.md
+.github
 gnome
 libs.list
 README.md
 scripts
 shell
 termux
+tests
 tmux
 vim
 zsh

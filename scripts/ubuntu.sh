@@ -26,6 +26,8 @@ update_system() {
 
 install_system_packages() {
   prompt_txt 'Install programs...'
+  # Unquoted on purpose: the package list is intentionally word-split.
+  # shellcheck disable=SC2046
   sudo apt install -y $(cat "$REPO_ROOT/libs.list") ||
     { show_error 'Failed to install packages'; return 1; }
   show_success "Success\n"
@@ -72,6 +74,20 @@ install_mise() {
   show_success "Success\n"
 }
 
+set_default_shell() {
+  local zsh_path current_shell
+  zsh_path="$(command -v zsh)" || { show_error 'zsh not found'; return 1; }
+  current_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  if [ "$current_shell" = "$zsh_path" ]; then
+    show_warn "Default shell is already zsh\n"
+  else
+    prompt_txt 'Setting zsh as default shell...'
+    sudo chsh -s "$zsh_path" "$(id -un)" ||
+      { show_error 'Failed to set default shell'; return 1; }
+    show_success "Success — re-login to apply\n"
+  fi
+}
+
 stow_home() {
   prompt_txt 'Stowing dotfiles...'
 
@@ -97,6 +113,7 @@ run_template() {
 
 update_system
 install_system_packages
+set_default_shell
 stow_home
 install_mise
 
