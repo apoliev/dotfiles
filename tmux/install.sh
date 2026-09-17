@@ -18,6 +18,12 @@ else
 fi
 
 (prompt_txt 'Install or update plugins...' &&
-bash "$HOME/.tmux/plugins/tpm/bin/install_plugins" &&
-bash "$HOME/.tmux/plugins/tpm/bin/update_plugins" all &&
+TMUX_HEADLESS=1 bash "$HOME/.tmux/plugins/tpm/bin/install_plugins" &&
+TMUX_HEADLESS=1 bash "$HOME/.tmux/plugins/tpm/bin/update_plugins" all &&
 show_success "Success\n") || (show_error 'Error' && exit 1)
+
+# TPM helper scripts spawn a headless server (`tmux start-server`); it normally
+# exits by itself, but kill it if it lingers - only when there are no sessions.
+if ! tmux list-sessions >/dev/null 2>&1; then
+  tmux kill-server >/dev/null 2>&1 || true
+fi

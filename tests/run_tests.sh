@@ -82,6 +82,12 @@ for list in "$REPO_ROOT/libs.list" "$REPO_ROOT/termux/libs.list"; do
   expect_ok "no duplicates: $label" bash -c "! sort '$list' | uniq -d | grep -q ."
 done
 
+echo "== sanity: tpm headless fork-bomb guard =="
+expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \
+  bash -c "grep -q 'TMUX_HEADLESS=1 bash' '$REPO_ROOT/tmux/install.sh'"
+expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
+  bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
+
 echo
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]
