@@ -2,6 +2,7 @@ bat
 cmake
 curl
 duf
+fastfetch
 fzf
 git
 gnupg
