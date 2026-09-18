@@ -3,7 +3,6 @@ ca-certificates
 cmake
 curl
 duf
-fastfetch
 git
 gnupg2
 htop
