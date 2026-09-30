@@ -1,0 +1,51 @@
+// Sandboxed devcontainer for working on the dotfiles repo with agents.
+//
+// Isolation model:
+// - The repo is bind-mounted INSIDE the container user's $HOME
+//   (/home/vscode/.dotfiles), exactly like on the host — stow, install.sh
+//   scripts and tests all target the container $HOME, never the host's.
+// - opencode auth is bind-mounted read-only; agents cannot read-modify the
+//   host credential file and it never lands in the image.
+// - No docker.sock, no ~/.ssh, no gh config: agents can commit locally but
+//   cannot push or reach the docker daemon.
+// - Runtime container runs without capabilities and without privilege
+//   escalation; everything privileged is done at image build time.
+//
+// Secrets are passed one by one through remoteEnv mappings, e.g.:
+//   "SOURCECRAFT_TOKEN": "${localEnv:SOURCECRAFT_TOKEN}"
+{
+  "name": "dotfiles sandbox",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": false,
+  "workspaceFolder": "/home/vscode/.dotfiles",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/vscode/.dotfiles,type=bind",
+  "runArgs": [
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--init"
+  ],
+  "mounts": [
+    "source=${localEnv:HOME}/.local/share/opencode/auth.json,target=/home/vscode/.local/share/opencode/auth.json,type=bind,readonly"
+  ],
+  "remoteEnv": {
+    "PATH": "/home/vscode/.local/bin:/home/vscode/.local/share/mise/shims:${containerEnv:PATH}",
+    "GIT_AUTHOR_NAME": "${localEnv:GIT_AUTHOR_NAME}",
+    "GIT_AUTHOR_EMAIL": "${localEnv:GIT_AUTHOR_EMAIL}",
+    "OPENCODE_CONFIG": "/home/vscode/.dotfiles/.devcontainer/opencode.sandbox.jsonc"
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "timonwong.shellcheck"
+      ]
+    }
+  }
+}

@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y shellcheck stow zsh
 
       - name: Shellcheck
-        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh
+        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh .devcontainer/post-create.sh
 
       - name: Tests
         run: bash tests/run_tests.sh

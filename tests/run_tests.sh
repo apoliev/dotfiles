@@ -69,7 +69,7 @@ if command -v stow >/dev/null 2>&1; then
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
-  for f in README.md AGENTS.md libs.list .stow-local-ignore .git \
+  for f in README.md AGENTS.md libs.list .stow-local-ignore .git .devcontainer \
            scripts shell zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
   done

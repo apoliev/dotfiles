@@ -1,4 +1,5 @@
 .git
+.devcontainer
 AGENTS.md
 .github
 gnome

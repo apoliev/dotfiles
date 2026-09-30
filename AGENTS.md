@@ -12,6 +12,9 @@ CI: `.github/workflows/ci.yml` (no build step).
   whole directory into the repo and programs would write their configs into it.
 - `.stow-local-ignore` excludes non-dotfiles from stowing. **Any new top-level
   file/dir that is not a dotfile must be added there**, or stow symlinks it into `$HOME`.
+- `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`
+  inside the container and stow targets the container `$HOME`, so stow and the
+  install scripts can be exercised safely. It is stow-ignored like the rest.
 - Per-area dirs (`zsh/`, `vim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
   scripts symlink pieces into `~/.oh-my-zsh/custom`, `~/.local/lib`, `~/.vim`, `~/.tmux/plugins`.
 - `gnome/*.dconf` files are stored here only; no script applies them.
