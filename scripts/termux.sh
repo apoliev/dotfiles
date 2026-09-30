@@ -44,6 +44,10 @@ stow_home() {
   backup_once "$HOME/.tmux.conf"
   backup_once "$HOME/.vimrc"
 
+  # ~/.config must exist before stow runs — otherwise stow symlinks the whole
+  # directory into the repo and programs write their configs into it
+  mkdir -p "$HOME/.config"
+
   stow -d "$REPO_ROOT" -t "$HOME" . ||
     { show_error 'stow failed — resolve the conflicts listed above'; return 1; }
 

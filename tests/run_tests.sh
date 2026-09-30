@@ -61,10 +61,14 @@ rm -rf "$t"
 echo "== integration: stow into fake \$HOME =="
 if command -v stow >/dev/null 2>&1; then
   fake="$(mktemp -d)"
+  # mirror stow_home(): ~/.config must pre-exist, or stow claims the whole dir
+  mkdir -p "$fake/.config"
   expect_ok "stow succeeds" stow -d "$REPO_ROOT" -t "$fake" .
-  for l in .zshrc .vimrc .tmux.conf .irbrc .config; do
+  for l in .zshrc .vimrc .tmux.conf .irbrc; do
     expect_ok "linked: $l" bash -c "[ -L '$fake/$l' ] && [ '$fake/$l' -ef '$REPO_ROOT/$l' ]"
   done
+  expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
+  expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
   for f in README.md AGENTS.md libs.list .stow-local-ignore .git \
            scripts shell zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"

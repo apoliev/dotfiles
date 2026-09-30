@@ -7,6 +7,9 @@ CI: `.github/workflows/ci.yml` (no build step).
 
 - Repo root **is** the stow package: `stow -d ~/.dotfiles -t "$HOME" .` symlinks
   top-level dotfiles (`.zshrc`, `.vimrc`, `.tmux.conf`, `.irbrc`, `.config/`) into `$HOME`.
+- `stow_home()` pre-creates `~/.config` (`mkdir -p`) so stow folds into it and
+  links only `.config/mise` — if `~/.config` didn't exist, stow would symlink the
+  whole directory into the repo and programs would write their configs into it.
 - `.stow-local-ignore` excludes non-dotfiles from stowing. **Any new top-level
   file/dir that is not a dotfile must be added there**, or stow symlinks it into `$HOME`.
 - Per-area dirs (`zsh/`, `vim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
