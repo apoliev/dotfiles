@@ -19,6 +19,30 @@ UNIT_DIR="$HOME/.config/systemd/user"
 UNIT_FILE="$UNIT_DIR/sourcecraft-ipc.service"
 INSTALLER_URL="https://s3.yandexcloud.net/sourcecraft-cli/install.sh"
 
+# PATH inside the systemd unit. The src CLI resolves auth tokens only when it
+# can detect a browser; under WSL2 that check goes through cmd.exe interop,
+# so the Windows system32 dir must be on the unit's PATH (see README.md).
+unit_path() {
+  local p="$HOME/sourcecraft/bin:$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin"
+  local wsl_dir
+  if wsl_dir="$(dirname "$(command -v cmd.exe 2>/dev/null)" 2>/dev/null)" &&
+    [ -n "$wsl_dir" ] &&
+    case "$wsl_dir" in *[[:space:]:]*|.) false ;; *) true ;; esac; then
+    p="$p:$wsl_dir"
+  fi
+  printf '%s' "$p"
+}
+
+# Session display vars for native (non-WSL) desktops: the src CLI browser
+# detection may need them where there is no cmd.exe interop. Empty when absent.
+# Lines are separated by literal "\n" so sed can expand them in the replacement.
+unit_extra_env() {
+  local out=""
+  [ -n "${DISPLAY:-}" ] && out+='Environment="DISPLAY='${DISPLAY}'"\n'
+  [ -n "${WAYLAND_DISPLAY:-}" ] && out+='Environment="WAYLAND_DISPLAY='${WAYLAND_DISPLAY}'"\n'
+  printf '%s' "$out"
+}
+
 find_src() {
   if [ -x "$SRC_FALLBACK" ]; then
     echo "$SRC_FALLBACK"
@@ -80,7 +104,8 @@ if [ "$systemd_ok" -eq 1 ]; then
   fi
   KEY="$(cat "$KEY_FILE")"
   mkdir -p "$UNIT_DIR"
-  sed -e "s|@SRC_PATH@|$SRC|g" -e "s|@KEY@|$KEY|g" \
+  sed -e "s|@SRC_PATH@|$SRC|g" -e "s|@KEY@|$KEY|g" -e "s|@PATH@|$(unit_path)|g" \
+    -e "s|@EXTRA_ENV@|$(unit_extra_env)|g" \
     "$DIR/sourcecraft-ipc.service.in" >"$UNIT_FILE"
   systemctl --user daemon-reload
   systemctl --user enable --quiet sourcecraft-ipc

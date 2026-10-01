@@ -59,6 +59,13 @@ PATH для `src`, автодополнение и экспорт ключа д�
   `src auth login` (URL — в браузер Windows), и повторить `install.sh`;
   auth-чек в скрипте ограничен таймаутом, поэтому без логина он не зависает,
   а предупреждает
+- `502` от прокси под systemd — `src` в юните не смог получить токен: он
+  проверяет «есть ли браузер». В WSL2 эта проверка идёт через `cmd.exe` из
+  `/mnt/c/WINDOWS/system32`, на обычном Linux — через `DISPLAY`/`WAYLAND_DISPLAY`
+  и `xdg-open`. `install.sh` прописывает юниту PATH (с interop-каталогом под
+  WSL) и display-переменные сессии; если interop отключён (`enabled=false` в
+  `/etc/wsl.conf`), включите его, сделайте `src auth login` заново и
+  перезапустите `install.sh`
 - `401` от прокси — расхождение ключа: `systemctl --user restart sourcecraft-ipc`
 - после `src auth login` (релогин) перезапустить сервис
 - логи: `journalctl --user -u sourcecraft-ipc -f` или `sc-ipc logs`

@@ -4,8 +4,10 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=@SRC_PATH@ ipc --port 8787
+Environment=PATH=@PATH@
+@EXTRA_ENV@
 Environment=SOURCECRAFT_IPC_API_KEY=@KEY@
+ExecStart=@SRC_PATH@ ipc --port 8787
 Restart=on-failure
 RestartSec=3
 

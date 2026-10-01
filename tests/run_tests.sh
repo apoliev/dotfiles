@@ -120,6 +120,14 @@ expect_ok "auth check uses src auth status, not quota" \
   bash -c "grep -q 'auth status' '$REPO_ROOT/sourcecraft/install.sh' && ! grep -q 'quota' '$REPO_ROOT/sourcecraft/install.sh'"
 expect_ok "auth check is wrapped in timeout" \
   bash -c "grep -q 'timeout' '$REPO_ROOT/sourcecraft/install.sh'"
+expect_ok "unit template sets PATH placeholder" \
+  bash -c "grep -q '^Environment=PATH=@PATH@$' '$REPO_ROOT/sourcecraft/sourcecraft-ipc.service.in'"
+expect_ok "unit template has EXTRA_ENV placeholder for display vars" \
+  bash -c "grep -q '^@EXTRA_ENV@$' '$REPO_ROOT/sourcecraft/sourcecraft-ipc.service.in'"
+expect_ok "install.sh substitutes unit PATH (WSL browser detection)" \
+  bash -c "grep -q '@PATH@|' '$REPO_ROOT/sourcecraft/install.sh' && grep -q 'cmd.exe' '$REPO_ROOT/sourcecraft/install.sh'"
+expect_ok "install.sh passes display env to unit (native Linux)" \
+  bash -c "grep -q '@EXTRA_ENV@|' '$REPO_ROOT/sourcecraft/install.sh' && grep -q 'WAYLAND_DISPLAY' '$REPO_ROOT/sourcecraft/install.sh'"
 
 echo
 echo "passed: $pass, failed: $fail"
