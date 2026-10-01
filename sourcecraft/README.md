@@ -55,6 +55,10 @@ PATH для `src`, автодополнение и экспорт ключа д�
 
 ## Troubleshooting
 
+- `install.sh` виснет на первом запуске — нет авторизации: Ctrl+C, затем
+  `src auth login` (URL — в браузер Windows), и повторить `install.sh`;
+  auth-чек в скрипте ограничен таймаутом, поэтому без логина он не зависает,
+  а предупреждает
 - `401` от прокси — расхождение ключа: `systemctl --user restart sourcecraft-ipc`
 - после `src auth login` (релогин) перезапустить сервис
 - логи: `journalctl --user -u sourcecraft-ipc -f` или `sc-ipc logs`

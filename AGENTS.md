@@ -10,8 +10,8 @@ CI: `.github/workflows/ci.yml` (no build step).
 - `stow_home()` pre-creates `~/.config` (`mkdir -p`) so stow folds into it and
   links only `.config/mise` — if `~/.config` didn't exist, stow would symlink the
   whole directory into the repo and programs would write their configs into it.
-  It also `backup_once`-es app-created `.config` files (opencode jsonc/json,
-  mise config.toml): a real file at a stowed path makes stow abort.
+  It also `backup_once`-es app-created `.config` files (opencode jsonc/json):
+  a real file at a stowed path makes stow abort.
 - `.stow-local-ignore` excludes non-dotfiles from stowing. **Any new top-level
   file/dir that is not a dotfile must be added there**, or stow symlinks it into `$HOME`.
 - `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`

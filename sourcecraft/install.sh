@@ -44,7 +44,7 @@ SRC=""
 if ! SRC="$(find_src)"; then
   (prompt_txt 'src CLI not found, installing from the official installer...' &&
     tmp="$(mktemp -d)" &&
-    curl -fsSL "$INSTALLER_URL" -o "$tmp/install.sh" &&
+    curl -fsSL --connect-timeout 10 "$INSTALLER_URL" -o "$tmp/install.sh" &&
     sh "$tmp/install.sh" -n &&
     rm -rf "$tmp" &&
     show_success 'src CLI installed') || {
@@ -59,11 +59,13 @@ else
   show_success "Found src CLI: $SRC"
 fi
 
-if "$SRC" quota >/dev/null 2>&1; then
+if timeout "${SC_AUTH_TIMEOUT:-15}" "$SRC" auth status </dev/null >/dev/null 2>&1; then
   show_success 'SourceCraft auth OK'
 else
   show_warn "Not authenticated: run 'src auth login', then re-run this script\n"
-  show_warn "WSL2 without a keyring: set 'cred_storage: file' in ~/.config/sourcecraft/config.yaml first\n"
+  show_warn "The script continues without auth — the proxy will return 401 until you log in\n"
+  show_warn "WSL2: copy the login URL into a Windows browser; without a keyring set\n"
+  show_warn "'cred_storage: file' in ~/.config/sourcecraft/config.yaml BEFORE 'src auth login'\n"
 fi
 
 systemd_ok=0
@@ -84,7 +86,7 @@ if [ "$systemd_ok" -eq 1 ]; then
   systemctl --user enable --quiet sourcecraft-ipc
   systemctl --user restart sourcecraft-ipc
   sleep 1
-  code="$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:$PORT/chat/completions" \
+  code="$(curl -s -m 5 -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:$PORT/chat/completions" \
     -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{}' || true)"
   if [ "$code" = "400" ]; then
     show_success "Proxy is running on http://127.0.0.1:$PORT (systemd: sourcecraft-ipc)"

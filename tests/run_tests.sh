@@ -67,13 +67,11 @@ if command -v stow >/dev/null 2>&1; then
   # mirror stow_home(): ~/.config must pre-exist, or stow claims the whole dir
   mkdir -p "$fake/.config"
   # app-created configs block stow — stow_home() backs them up first; mirror that
-  mkdir -p "$fake/.config/opencode" "$fake/.config/mise"
+  mkdir -p "$fake/.config/opencode"
   printf '{"schema":"pre-existing"}\n' >"$fake/.config/opencode/opencode.jsonc"
-  printf '[settings]\n' >"$fake/.config/mise/config.toml"
   # shellcheck disable=SC1091
   source "$REPO_ROOT/shell/prompt_utils.sh"
   backup_once "$fake/.config/opencode/opencode.jsonc"
-  backup_once "$fake/.config/mise/config.toml"
   expect_ok "stow succeeds" stow -d "$REPO_ROOT" -t "$fake" .
   for l in .zshrc .vimrc .tmux.conf .irbrc; do
     expect_ok "linked: $l" bash -c "[ -L '$fake/$l' ] && [ '$fake/$l' -ef '$REPO_ROOT/$l' ]"
@@ -82,7 +80,6 @@ if command -v stow >/dev/null 2>&1; then
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
   expect_ok "linked: opencode.jsonc" bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
   expect_ok "opencode.jsonc original kept as .bak" bash -c "[ -f '$fake/.config/opencode/opencode.jsonc.bak' ]"
-  expect_ok "mise config.toml original kept as .bak" bash -c "[ -f '$fake/.config/mise/config.toml.bak' ]"
   for f in README.md AGENTS.md libs.list .stow-local-ignore .git .devcontainer \
            scripts shell sourcecraft zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
@@ -109,8 +106,6 @@ expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
 echo "== sanity: app-created configs backed up before stow =="
 expect_ok "ubuntu.sh backs up opencode.jsonc" \
   bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
-expect_ok "ubuntu.sh backs up mise/config.toml" \
-  bash -c "grep -q 'backup_once.*mise/config.toml' '$REPO_ROOT/scripts/ubuntu.sh'"
 
 echo "== sanity: sourcecraft zsh plugin =="
 expect_ok "zsh/install.sh links sourcecraft plugin" \
@@ -119,6 +114,12 @@ expect_ok "sourcecraft plugin is enabled by default" \
   bash -c "grep -Eq '^[[:space:]]+sourcecraft[[:space:]]*$' '$REPO_ROOT/.zshrc'"
 expect_ok "sourcecraft plugin guards on src binary" \
   bash -c "grep -q 'sourcecraft/bin/src' '$REPO_ROOT/zsh/custom/plugins/sourcecraft/sourcecraft.plugin.zsh'"
+
+echo "== sanity: sourcecraft install.sh =="
+expect_ok "auth check uses src auth status, not quota" \
+  bash -c "grep -q 'auth status' '$REPO_ROOT/sourcecraft/install.sh' && ! grep -q 'quota' '$REPO_ROOT/sourcecraft/install.sh'"
+expect_ok "auth check is wrapped in timeout" \
+  bash -c "grep -q 'timeout' '$REPO_ROOT/sourcecraft/install.sh'"
 
 echo
 echo "passed: $pass, failed: $fail"
