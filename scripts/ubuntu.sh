@@ -100,6 +100,12 @@ stow_home() {
   # directory into the repo and programs write their configs into it
   mkdir -p "$HOME/.config"
 
+  # apps create these on first run — a real file blocks stow, move it aside
+  mkdir -p "$HOME/.config/opencode" "$HOME/.config/mise"
+  backup_once "$HOME/.config/opencode/opencode.jsonc"
+  backup_once "$HOME/.config/opencode/opencode.json"
+  backup_once "$HOME/.config/mise/config.toml"
+
   stow -d "$REPO_ROOT" -t "$HOME" . ||
     { show_error 'stow failed — resolve the conflicts listed above'; return 1; }
 

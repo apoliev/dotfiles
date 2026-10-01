@@ -66,12 +66,23 @@ if command -v stow >/dev/null 2>&1; then
   fake="$(mktemp -d)"
   # mirror stow_home(): ~/.config must pre-exist, or stow claims the whole dir
   mkdir -p "$fake/.config"
+  # app-created configs block stow — stow_home() backs them up first; mirror that
+  mkdir -p "$fake/.config/opencode" "$fake/.config/mise"
+  printf '{"schema":"pre-existing"}\n' >"$fake/.config/opencode/opencode.jsonc"
+  printf '[settings]\n' >"$fake/.config/mise/config.toml"
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/shell/prompt_utils.sh"
+  backup_once "$fake/.config/opencode/opencode.jsonc"
+  backup_once "$fake/.config/mise/config.toml"
   expect_ok "stow succeeds" stow -d "$REPO_ROOT" -t "$fake" .
   for l in .zshrc .vimrc .tmux.conf .irbrc; do
     expect_ok "linked: $l" bash -c "[ -L '$fake/$l' ] && [ '$fake/$l' -ef '$REPO_ROOT/$l' ]"
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
+  expect_ok "linked: opencode.jsonc" bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
+  expect_ok "opencode.jsonc original kept as .bak" bash -c "[ -f '$fake/.config/opencode/opencode.jsonc.bak' ]"
+  expect_ok "mise config.toml original kept as .bak" bash -c "[ -f '$fake/.config/mise/config.toml.bak' ]"
   for f in README.md AGENTS.md libs.list .stow-local-ignore .git .devcontainer \
            scripts shell sourcecraft zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
@@ -94,6 +105,12 @@ expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \
   bash -c "grep -q 'TMUX_HEADLESS=1 bash' '$REPO_ROOT/tmux/install.sh'"
 expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
   bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
+
+echo "== sanity: app-created configs backed up before stow =="
+expect_ok "ubuntu.sh backs up opencode.jsonc" \
+  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
+expect_ok "ubuntu.sh backs up mise/config.toml" \
+  bash -c "grep -q 'backup_once.*mise/config.toml' '$REPO_ROOT/scripts/ubuntu.sh'"
 
 echo "== sanity: sourcecraft zsh plugin =="
 expect_ok "zsh/install.sh links sourcecraft plugin" \
