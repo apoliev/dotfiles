@@ -1,7 +1,8 @@
 # Sandbox image for the dotfiles repo. Mirrors scripts/ubuntu.sh — apt
 # packages from libs.list, SHA-256-verified mise — but every privileged step
-# happens at build time: the runtime user has no sudo and the container is
-# started with --cap-drop=ALL / no-new-privileges (see devcontainer.json).
+# happens at build time: the runtime user has no privilege escalation (the
+# container is started with --cap-drop=ALL / no-new-privileges, see
+# devcontainer.json) and a no-op sudo shim keeps repo scripts working.
 
 FROM ubuntu:24.04
 
@@ -18,12 +19,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user; uid 1000 matches the host user so the bind-mounted repo
-# stays writable without extra capabilities. ubuntu:24.04 ships a default
-# 'ubuntu' user with uid/gid 1000 — remove it first.
+# stays writable without extra capabilities. bash is the default shell.
+# ubuntu:24.04 ships a default 'ubuntu' user with uid/gid 1000 — remove it first.
 RUN set -eux; \
     if id -u ubuntu >/dev/null 2>&1; then userdel --remove ubuntu; fi; \
     groupadd --gid "$USER_GID" "$USERNAME"; \
-    useradd --uid "$USER_UID" --gid "$USER_GID" -m -s /usr/bin/zsh "$USERNAME"
+    useradd --uid "$USER_UID" --gid "$USER_GID" -m -s /bin/bash "$USERNAME"
 
 # mise binary: same download + checksum flow as install_mise() in
 # scripts/ubuntu.sh. Download and verification happen as root; the install
@@ -59,6 +60,21 @@ RUN set -eux; \
       sleep 10; \
     done; \
     [ "$ok" = 1 ]
+
+# No-op sudo: no privilege escalation at runtime (--cap-drop=ALL,
+# no-new-privileges), but repo scripts call sudo unconditionally
+# (e.g. scripts/ubuntu.sh). The shim drops "sudo" and executes the rest;
+# ~/.local/bin is first on PATH so it shadows any real sudo. A shell alias
+# would not work — aliases do not expand in non-interactive scripts.
+RUN set -eux; \
+    mkdir -p "/home/${USERNAME}/.local/bin"; \
+    printf '%s\n' \
+      '#!/bin/bash' \
+      'while [ "$#" -gt 0 ]; do case "$1" in -v) exit 0 ;; -*) shift ;; *) break ;; esac; done' \
+      'if [ "$#" -eq 0 ]; then exit 1; fi' \
+      'exec "$@"' \
+      > "/home/${USERNAME}/.local/bin/sudo"; \
+    chmod +x "/home/${USERNAME}/.local/bin/sudo"
 
 # Mount target for the read-only opencode auth file (see devcontainer.json):
 # must exist at container start, and must be a file, not a dir.
