@@ -1,0 +1,174 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "sourcecraft": {
+      "name": "SourceCraft",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:8787/",
+        "apiKey": "{env:SOURCECRAFT_IPC_API_KEY}"
+      },
+      "models": {
+        "default": {
+          "name": "SourceCraft Default",
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 500000,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "none": { "reasoningEffort": "none" }
+          }
+        },
+        "deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash",
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "none": { "reasoningEffort": "none" }
+          }
+        },
+        "glm-5.2": {
+          "name": "GLM 5.2",
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 256000,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "none": { "reasoningEffort": "none" }
+          }
+        },
+        "qwen3.6-35b": {
+          "name": "Qwen3.6 35B",
+          "attachment": true,
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text", "image"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "low": { "reasoningEffort": "low" },
+            "none": { "reasoningEffort": "none" }
+          }
+        }
+      }
+    },
+    "sourcecraft-external": {
+      "name": "SourceCraft External",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "http://127.0.0.1:8787/",
+        "apiKey": "{env:SOURCECRAFT_IPC_API_KEY}"
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM 5.3",
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "low": { "reasoningEffort": "low" },
+            "max": { "reasoningEffort": "max" }
+          }
+        },
+        "glm-5.3-flash": {
+          "name": "GLM 5.3 Flash",
+          "attachment": true,
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 1310720,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "options": {
+            "reasoningEffort": "high"
+          },
+          "provider": {
+            "npm": "@ai-sdk/openai-compatible"
+          },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "low": { "reasoningEffort": "low" },
+            "max": { "reasoningEffort": "max" }
+          }
+        }
+      }
+    }
+  }
+}

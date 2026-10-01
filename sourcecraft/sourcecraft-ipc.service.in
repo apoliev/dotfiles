@@ -1,0 +1,13 @@
+[Unit]
+Description=SourceCraft IPC (LLM gateway proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=@SRC_PATH@ ipc --port 8787
+Environment=SOURCECRAFT_IPC_API_KEY=@KEY@
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

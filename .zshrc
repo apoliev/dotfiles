@@ -16,6 +16,7 @@ plugins=(
   fzf-tab
   git
   qrcode
+  sourcecraft
 )
 
 if command -v zoxide >/dev/null 2>&1; then

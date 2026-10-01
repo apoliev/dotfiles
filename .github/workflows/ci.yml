@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y shellcheck stow zsh
 
       - name: Shellcheck
-        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh .devcontainer/post-create.sh
+        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh .devcontainer/post-create.sh sourcecraft/install.sh sourcecraft/sc-ipc
 
       - name: Tests
         run: bash tests/run_tests.sh
@@ -59,6 +59,7 @@ jobs:
           test -f "$HOME/.oh-my-zsh/oh-my-zsh.sh"
           test -d "$HOME/.oh-my-zsh/custom/plugins/fzf-tab/.git"
           test -L "$HOME/.oh-my-zsh/custom/plugins/copy"
+          test -L "$HOME/.oh-my-zsh/custom/plugins/sourcecraft"
           test -L "$HOME/.oh-my-zsh/custom/themes/bira-shell.zsh-theme"
           test -L "$HOME/.local/lib/prompt_utils.sh"
           test -f "$HOME/.vim/autoload/plug.vim"

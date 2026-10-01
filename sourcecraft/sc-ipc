@@ -1,0 +1,87 @@
+#!/bin/bash
+# Start/stop the SourceCraft ipc proxy without systemd.
+# Usage: sc-ipc {start|stop|restart|status|logs}
+
+set -e
+
+DIR="$(dirname "$(readlink -f "$0")")"
+
+# shellcheck disable=SC1091
+source "$DIR/../shell/prompt_utils.sh"
+
+PORT=8787
+STATE_DIR="$HOME/.config/sourcecraft-ipc"
+KEY_FILE="$STATE_DIR/key"
+PID_FILE="$STATE_DIR/src-ipc.pid"
+LOG_FILE="$STATE_DIR/src-ipc.log"
+
+find_src() {
+  if [ -x "$HOME/sourcecraft/bin/src" ]; then
+    echo "$HOME/sourcecraft/bin/src"
+  elif command -v src >/dev/null 2>&1; then
+    command -v src
+  else
+    return 1
+  fi
+}
+
+is_running() {
+  [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
+}
+
+cmd_start() {
+  if is_running; then
+    show_success "sc-ipc already running (pid $(cat "$PID_FILE"))"
+    return 0
+  fi
+  if [ ! -f "$KEY_FILE" ]; then
+    show_error "No key file: run 'bash $DIR/install.sh' first"
+    exit 1
+  fi
+  SRC="$(find_src)" || {
+    show_error 'src CLI not found'
+    exit 1
+  }
+  mkdir -p "$STATE_DIR"
+  SOURCECRAFT_IPC_API_KEY="$(cat "$KEY_FILE")" nohup "$SRC" ipc --port "$PORT" >>"$LOG_FILE" 2>&1 &
+  echo $! >"$PID_FILE"
+  sleep 1
+  if is_running; then
+    show_success "sc-ipc started (pid $(cat "$PID_FILE")), log: $LOG_FILE"
+  else
+    show_error "sc-ipc failed to start — see $LOG_FILE"
+    exit 1
+  fi
+}
+
+cmd_stop() {
+  if is_running; then
+    kill "$(cat "$PID_FILE")"
+    rm -f "$PID_FILE"
+    show_success 'sc-ipc stopped'
+  else
+    rm -f "$PID_FILE"
+    show_warn 'sc-ipc is not running\n'
+  fi
+}
+
+cmd_status() {
+  if is_running; then
+    show_success "sc-ipc running (pid $(cat "$PID_FILE"))"
+  else
+    show_warn 'sc-ipc is not running\n'
+    return 1
+  fi
+}
+
+case "${1:-}" in
+  start) cmd_start ;;
+  stop) cmd_stop ;;
+  restart) cmd_stop; cmd_start ;;
+  status) cmd_status ;;
+  logs) tail -n 100 -f "$LOG_FILE" ;;
+  *)
+    echo "Usage: sc-ipc {start|stop|restart|status|logs}"
+    exit 1
+    ;;
+esac

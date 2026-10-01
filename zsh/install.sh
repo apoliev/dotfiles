@@ -55,6 +55,14 @@ ln -s "$DIR/custom/plugins/copy" "$CUSTOM_DIR/plugins/copy" ||
   { show_error 'Failed to link copy plugin'; exit 1; }
 show_success "Success\n"
 
+# custom plugin: sourcecraft (inert until the src CLI is installed)
+prompt_txt 'Linking sourcecraft plugin...'
+mkdir -p "$CUSTOM_DIR/plugins"
+rm -rf "$CUSTOM_DIR/plugins/sourcecraft"
+ln -s "$DIR/custom/plugins/sourcecraft" "$CUSTOM_DIR/plugins/sourcecraft" ||
+  { show_error 'Failed to link sourcecraft plugin'; exit 1; }
+show_success "Success\n"
+
 # theme
 prompt_txt 'Linking theme...'
 rm -rf "$CUSTOM_DIR/themes/bira-shell.zsh-theme"

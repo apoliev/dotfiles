@@ -33,6 +33,9 @@ else
   echo "  skip - zsh not installed"
 fi
 
+echo "== syntax: bash -n (no .sh extension) =="
+expect_ok "bash -n sourcecraft/sc-ipc" bash -n "$REPO_ROOT/sourcecraft/sc-ipc"
+
 echo "== unit: backup_once =="
 t="$(mktemp -d)"
 
@@ -70,7 +73,7 @@ if command -v stow >/dev/null 2>&1; then
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
   for f in README.md AGENTS.md libs.list .stow-local-ignore .git .devcontainer \
-           scripts shell zsh vim tmux termux gnome tests .github; do
+           scripts shell sourcecraft zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
   done
   stow -D -d "$REPO_ROOT" -t "$fake" .
@@ -91,6 +94,14 @@ expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \
   bash -c "grep -q 'TMUX_HEADLESS=1 bash' '$REPO_ROOT/tmux/install.sh'"
 expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
   bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
+
+echo "== sanity: sourcecraft zsh plugin =="
+expect_ok "zsh/install.sh links sourcecraft plugin" \
+  bash -c "grep -q 'custom/plugins/sourcecraft' '$REPO_ROOT/zsh/install.sh'"
+expect_ok "sourcecraft plugin is enabled by default" \
+  bash -c "grep -Eq '^[[:space:]]+sourcecraft[[:space:]]*$' '$REPO_ROOT/.zshrc'"
+expect_ok "sourcecraft plugin guards on src binary" \
+  bash -c "grep -q 'sourcecraft/bin/src' '$REPO_ROOT/zsh/custom/plugins/sourcecraft/sourcecraft.plugin.zsh'"
 
 echo
 echo "passed: $pass, failed: $fail"
