@@ -14,6 +14,11 @@ CI: `.github/workflows/ci.yml` (no build step).
   a real file at a stowed path makes stow abort.
 - `.stow-local-ignore` excludes non-dotfiles from stowing. **Any new top-level
   file/dir that is not a dotfile must be added there**, or stow symlinks it into `$HOME`.
+  It also ignores `.agents` and opencode's runtime artifacts (`node_modules`,
+  `package*.json`): opencode keeps its own copies in the real `~/.config/opencode`,
+  and stowing same-named entries over them aborts with CONFLICT — that is why only
+  `opencode.jsonc`/`opencode.json` are `backup_once`-ed, the rest is ignored.
+  Git-cleanliness for those paths lives in the root `.gitignore`.
 - `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`
   inside the container and stow targets the container `$HOME`, so stow and the
   install scripts can be exercised safely. It is stow-ignored like the rest.

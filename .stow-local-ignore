@@ -1,9 +1,14 @@
 .git
+.agents
 .devcontainer
+.gitignore
 AGENTS.md
 .github
 gnome
 libs.list
+node_modules
+package-lock.json
+package.json
 README.md
 scripts
 shell

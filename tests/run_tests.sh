@@ -72,6 +72,19 @@ if command -v stow >/dev/null 2>&1; then
   # shellcheck disable=SC1091
   source "$REPO_ROOT/shell/prompt_utils.sh"
   backup_once "$fake/.config/opencode/opencode.jsonc"
+  # opencode keeps its own artifacts in the real ~/.config/opencode; stow must
+  # skip them (.stow-local-ignore), never back them up and never link over them
+  mkdir -p "$fake/.config/opencode/node_modules"
+  printf '{}\n' >"$fake/.config/opencode/package.json"
+  printf 'lock\n' >"$fake/.config/opencode/package-lock.json"
+  printf 'ig\n' >"$fake/.config/opencode/.gitignore"
+  # stale repo-side artifacts (opencode once ran inside the repo): must be
+  # ignored too, or stow tree-folds/conflicts with the fake $HOME copies
+  repo_nm="$REPO_ROOT/.config/opencode/node_modules"
+  repo_pj="$REPO_ROOT/.config/opencode/package.json"
+  test_nm=0; test_pj=0
+  if [ ! -e "$repo_nm" ]; then mkdir -p "$repo_nm"; test_nm=1; fi
+  if [ ! -e "$repo_pj" ]; then printf '{}\n' >"$repo_pj"; test_pj=1; fi
   expect_ok "stow succeeds" stow -d "$REPO_ROOT" -t "$fake" .
   for l in .zshrc .vimrc .tmux.conf .irbrc; do
     expect_ok "linked: $l" bash -c "[ -L '$fake/$l' ] && [ '$fake/$l' -ef '$REPO_ROOT/$l' ]"
@@ -80,10 +93,18 @@ if command -v stow >/dev/null 2>&1; then
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
   expect_ok "linked: opencode.jsonc" bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
   expect_ok "opencode.jsonc original kept as .bak" bash -c "[ -f '$fake/.config/opencode/opencode.jsonc.bak' ]"
-  for f in README.md AGENTS.md libs.list .stow-local-ignore .git .devcontainer \
-           scripts shell sourcecraft zsh vim tmux termux gnome tests .github; do
+  expect_ok "untouched: opencode artifacts" bash -c "
+    [ -d '$fake/.config/opencode/node_modules' ] &&
+    [ \"\$(cat '$fake/.config/opencode/package.json')\" = '{}' ] &&
+    [ ! -L '$fake/.config/opencode/package.json' ]"
+  expect_ok "repo artifacts not linked into \$HOME node_modules" \
+    bash -c "[ -z \"\$(ls -A '$fake/.config/opencode/node_modules')\" ]"
+  for f in README.md AGENTS.md libs.list .stow-local-ignore .git .gitignore .devcontainer \
+           .agents scripts shell sourcecraft zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
   done
+  [ "$test_pj" -eq 1 ] && rm -f "$repo_pj"
+  [ "$test_nm" -eq 1 ] && rm -rf "$repo_nm"
   stow -D -d "$REPO_ROOT" -t "$fake" .
   rm -rf "$fake"
 else
@@ -106,6 +127,14 @@ expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
 echo "== sanity: app-created configs backed up before stow =="
 expect_ok "ubuntu.sh backs up opencode.jsonc" \
   bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
+
+echo "== sanity: .stow-local-ignore covers opencode artifacts and .agents =="
+expect_ok "ignores node_modules" \
+  bash -c "grep -q '^node_modules$' '$REPO_ROOT/.stow-local-ignore'"
+expect_ok "ignores package.json" \
+  bash -c "grep -q '^package\.json$' '$REPO_ROOT/.stow-local-ignore'"
+expect_ok "ignores .agents" \
+  bash -c "grep -q '^\.agents$' '$REPO_ROOT/.stow-local-ignore'"
 
 echo "== sanity: sourcecraft zsh plugin =="
 expect_ok "zsh/install.sh links sourcecraft plugin" \
