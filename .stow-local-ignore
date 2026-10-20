@@ -2,8 +2,9 @@
 .agents
 .devcontainer
 .gitignore
-AGENTS.md
 .github
+.config/opencode/opencode\.jsonc
+AGENTS.md
 gnome
 libs.list
 node_modules

@@ -1,7 +1,9 @@
 # sourcecraft
 
 Модели SourceCraft в [opencode](https://opencode.ai) через локальный прокси.
-Провайдер-конфиг `.config/opencode/opencode.jsonc` ставится stow'ом, этот каталог — нет.
+Провайдеры генерируются в `~/.config/opencode/opencode.jsonc` скриптом
+`update-models` из каталога моделей src — файл не стowится и не коммитится,
+ручные правки provider-блока будут перезаписаны.
 
 ## Как это работает
 
@@ -10,7 +12,20 @@
 - opencode ходит в него как в провайдеры `sourcecraft` и `sourcecraft-external`
 - доступ к прокси — по Bearer-ключу из `~/.config/sourcecraft-ipc/key`
   (генерируется при установке, в git не попадает; opencode читает его из
-  переменной `SOURCECRAFT_IPC_API_KEY`, которую экспортирует `.zshrc`)
+  переменной `SOURCECRAFT_IPC_API_KEY`, которую экспортирует zsh-плагин)
+
+## Автообновление моделей
+
+`update-models` читает кэш каталога моделей src
+(`~/.cache/sourcecraft/models-v3-*.json`, src обновляет его сам при каждом
+запуске) и мержит провайдеров в `~/.config/opencode/opencode.jsonc`,
+сохраняя все остальные ключи конфига. Запускается:
+
+- автоматически из zsh-плагина `sourcecraft`, когда кэш новее конфига
+- из `sourcecraft/install.sh`
+
+Вручную: `bash ~/.dotfiles/sourcecraft/update-models`. Новые модели SourceCraft
+появляются в opencode после первого запуска любой команды `src` и нового шелла.
 
 Модели: `sourcecraft/default`, `sourcecraft/deepseek-v4-flash`,
 `sourcecraft/glm-5.2`, `sourcecraft/qwen3.6-35b`,

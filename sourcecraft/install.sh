@@ -1,7 +1,8 @@
 #!/bin/bash
 # Install SourceCraft models for opencode:
 # src CLI -> local ipc proxy (systemd user service) -> provider config.
-# Provider config itself (.config/opencode/opencode.jsonc) is stowed by the repo.
+# The provider config (~/.config/opencode/opencode.jsonc) is machine-generated
+# by update-models from src's model catalog — never stowed, merge-safe.
 # Safe to re-run; on a machine without src it downloads the official installer.
 
 set -e
@@ -123,5 +124,11 @@ else
   show_warn "  bash $DIR/sc-ipc start\n"
 fi
 
-prompt_txt 'Models for opencode: sourcecraft/{default,deepseek-v4-flash,glm-5.2,qwen3.6-35b} and sourcecraft-external/{glm-5.3,glm-5.3-flash}'
+# opencode provider config is machine-generated from src's model catalog
+# (not stowed anymore); safe on first run: it merges into the existing file
+if [ -x "$DIR/update-models" ]; then
+  "$DIR/update-models" || show_warn 'update-models failed — see its output\n'
+fi
+
+prompt_txt 'Models for opencode: run opencode and pick from sourcecraft/* — the list auto-updates from the src model catalog'
 prompt_txt 'zsh: plugin "sourcecraft" is enabled by default in .zshrc (inert until src CLI is installed)'

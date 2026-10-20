@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Regenerate SourceCraft providers in the opencode config from src's model catalog.
+
+src refreshes ~/.cache/sourcecraft/models-v3-*.json on every run; this script
+maps that catalog into the provider blocks of ~/.config/opencode/opencode.jsonc.
+Everything else in the config (schema, other providers, user settings) is kept.
+Safe to re-run: writes only when the result actually changes.
+"""
+
+import glob
+import json
+import os
+import sys
+import tempfile
+
+CONFIG = os.path.join(os.path.expanduser("~"), ".config", "opencode", "opencode.jsonc")
+CACHE_GLOB = os.path.join(os.path.expanduser("~"), ".cache", "sourcecraft", "models-v3-*.json")
+DOTFILES = os.path.join(os.path.expanduser("~"), ".dotfiles")
+BASE_URL = "http://127.0.0.1:8787/"
+API_KEY = "{env:SOURCECRAFT_IPC_API_KEY}"
+SCHEMA = "https://opencode.ai/config.json"
+
+
+def newest_catalog():
+    files = glob.glob(CACHE_GLOB)
+    return max(files, key=os.path.getmtime) if files else None
+
+
+def build_providers(catalog):
+    sourcecraft, external = {}, {}
+    for m in catalog.get("data", []):
+        mid = m.get("id")
+        if not mid:
+            continue
+        arch = m.get("architecture", {})
+        inputs = arch.get("input_modalities", ["text"])
+        outputs = arch.get("output_modalities", ["text"])
+        reasoning = m.get("reasoning", {})
+        efforts = reasoning.get("supported_efforts", [])
+
+        entry = {"name": m.get("name") or mid, "interleaved": {"field": "reasoning_content"}}
+        limit = {}
+        if m.get("context_length") is not None:
+            limit["context"] = m["context_length"]
+        if m.get("max_output_tokens") is not None:
+            limit["output"] = m["max_output_tokens"]
+        if limit:
+            entry["limit"] = limit
+        entry["modalities"] = {"input": inputs, "output": outputs}
+        if "image" in inputs:
+            entry["attachment"] = True
+        default_effort = reasoning.get("default_effort")
+        if default_effort:
+            entry["options"] = {"reasoningEffort": default_effort}
+        if efforts:
+            entry["variants"] = {e: {"reasoningEffort": e} for e in efforts}
+
+        # `default` always lives in the `sourcecraft` provider (like src does),
+        # so the sourcecraft/default alias keeps working
+        target = external if (m.get("external") and mid != "default") else sourcecraft
+        target[mid] = entry
+
+    def provider(name, models):
+        return {
+            "name": name,
+            "npm": "@ai-sdk/openai-compatible",
+            "options": {"baseURL": BASE_URL, "apiKey": API_KEY},
+            "models": models,
+        }
+
+    return {
+        "sourcecraft": provider("SourceCraft", sourcecraft),
+        "sourcecraft-external": provider("SourceCraft External", external),
+    }
+
+
+def main():
+    if os.path.islink(CONFIG):
+        target = os.path.realpath(CONFIG)
+        if target.startswith(DOTFILES + os.sep):
+            os.unlink(CONFIG)  # our own old stowed file — replace with generated
+        else:
+            print(f"refusing to touch symlink outside {DOTFILES}: {CONFIG}")
+            return
+
+    catalog_path = newest_catalog()
+    if not catalog_path:
+        print("no model catalog cache found (run any src command first)")
+        return
+    try:
+        with open(catalog_path) as f:
+            catalog = json.load(f)
+    except (OSError, ValueError) as e:
+        print(f"skipping: cannot read catalog {catalog_path}: {e}")
+        return
+
+    providers = build_providers(catalog)
+    if not providers["sourcecraft"]["models"] and not providers["sourcecraft-external"]["models"]:
+        print("catalog has no models — config left untouched")
+        return
+
+    existing = {}
+    if os.path.exists(CONFIG):
+        try:
+            with open(CONFIG) as f:
+                existing = json.load(f)
+        except (OSError, ValueError) as e:
+            print(f"skipping: {CONFIG} is not parseable JSON ({e}); fix or remove it first")
+            return
+
+    updated = dict(existing)
+    provider_section = updated.get("provider") if isinstance(updated.get("provider"), dict) else {}
+    provider_section = dict(provider_section)
+    provider_section.update(providers)
+    updated["provider"] = provider_section
+    updated.setdefault("$schema", SCHEMA)
+
+    if updated == existing:
+        print("opencode config is up to date")
+        return
+
+    os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(CONFIG), suffix=".tmp")
+    with os.fdopen(fd, "w") as f:
+        json.dump(updated, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, CONFIG)
+    total = len(providers["sourcecraft"]["models"]) + len(providers["sourcecraft-external"]["models"])
+    print(f"updated {CONFIG} ({total} models from {os.path.basename(catalog_path)})")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

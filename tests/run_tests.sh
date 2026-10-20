@@ -66,12 +66,10 @@ if command -v stow >/dev/null 2>&1; then
   fake="$(mktemp -d)"
   # mirror stow_home(): ~/.config must pre-exist, or stow claims the whole dir
   mkdir -p "$fake/.config"
-  # app-created configs block stow — stow_home() backs them up first; mirror that
+  # opencode.jsonc is no longer stowed (sourcecraft/update-models generates it
+  # in $HOME) — stow must never link over it and stow_home() no longer backs it up
   mkdir -p "$fake/.config/opencode"
   printf '{"schema":"pre-existing"}\n' >"$fake/.config/opencode/opencode.jsonc"
-  # shellcheck disable=SC1091
-  source "$REPO_ROOT/shell/prompt_utils.sh"
-  backup_once "$fake/.config/opencode/opencode.jsonc"
   # opencode keeps its own artifacts in the real ~/.config/opencode; stow must
   # skip them (.stow-local-ignore), never back them up and never link over them
   mkdir -p "$fake/.config/opencode/node_modules"
@@ -91,8 +89,8 @@ if command -v stow >/dev/null 2>&1; then
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
-  expect_ok "linked: opencode.jsonc" bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
-  expect_ok "opencode.jsonc original kept as .bak" bash -c "[ -f '$fake/.config/opencode/opencode.jsonc.bak' ]"
+  expect_ok "opencode.jsonc not stowed (machine-generated)" \
+    bash -c "[ -f '$fake/.config/opencode/opencode.jsonc' ] && [ ! -L '$fake/.config/opencode/opencode.jsonc' ]"
   expect_ok "untouched: opencode artifacts" bash -c "
     [ -d '$fake/.config/opencode/node_modules' ] &&
     [ \"\$(cat '$fake/.config/opencode/package.json')\" = '{}' ] &&
@@ -111,6 +109,58 @@ else
   echo "  skip - stow not installed"
 fi
 
+echo "== integration: sourcecraft model catalog -> opencode config =="
+if command -v python3 >/dev/null 2>&1; then
+  fake="$(mktemp -d)"
+  mkdir -p "$fake/.cache/sourcecraft" "$fake/.config/opencode" "$fake/.dotfiles"
+  cat >"$fake/.cache/sourcecraft/models-v3-test.json" <<'JSON'
+{"data":[
+ {"id":"default","name":"SourceCraft Default","external":true,"context_length":1048576,
+  "max_output_tokens":32768,
+  "architecture":{"input_modalities":["text"],"output_modalities":["text"]},
+  "reasoning":{"default_effort":"high","supported_efforts":["none","high"]}},
+ {"id":"kimi-k3","name":"Kimi K3","external":true,"context_length":1000000,
+  "max_output_tokens":32768,
+  "architecture":{"input_modalities":["text","image"],"output_modalities":["text"]},
+  "reasoning":{"default_effort":"high","supported_efforts":["none","low","high","max"]}},
+ {"id":"deepseek-v4.1-flash","name":"DeepSeek V4.1 Flash","external":false,
+  "context_length":512000,"max_output_tokens":32768,
+  "architecture":{"input_modalities":["text","image"],"output_modalities":["text"]},
+  "reasoning":{"default_effort":"high","supported_efforts":["none","high"]}}
+]}
+JSON
+  printf '{"schema":"https://opencode.ai/config.json","custom":{"keep":true}}\n' \
+    >"$fake/.config/opencode/opencode.jsonc"
+  HOME="$fake" python3 "$REPO_ROOT/sourcecraft/update-models" >/dev/null
+  if HOME="$fake" python3 - <<'EOF' 2>/dev/null
+import json, os
+cfg = json.load(open(os.path.expanduser("~/.config/opencode/opencode.jsonc")))
+p = cfg["provider"]
+assert p["sourcecraft-external"]["models"]["kimi-k3"]["attachment"] is True
+assert p["sourcecraft-external"]["options"]["apiKey"] == "{env:SOURCECRAFT_IPC_API_KEY}"
+assert p["sourcecraft"]["models"]["default"]["limit"]["context"] == 1048576  # default stays internal
+assert "deepseek-v4.1-flash" in p["sourcecraft"]["models"]
+assert "kimi-k3" not in p["sourcecraft"]["models"]
+assert p["sourcecraft"]["models"]["deepseek-v4.1-flash"]["variants"]["none"] == {"reasoningEffort": "none"}
+assert cfg["custom"] == {"keep": True}
+assert cfg["$schema"] == "https://opencode.ai/config.json"
+EOF
+  then ok "generator maps catalog into providers, keeps user keys"; else bad "generator mapping"; fi
+  before="$(md5sum "$fake/.config/opencode/opencode.jsonc" | cut -d' ' -f1)"
+  HOME="$fake" python3 "$REPO_ROOT/sourcecraft/update-models" >/dev/null
+  after="$(md5sum "$fake/.config/opencode/opencode.jsonc" | cut -d' ' -f1)"
+  expect_ok "generator is idempotent" bash -c "[ '$before' = '$after' ]"
+  # a symlink into the dotfiles repo is replaced by the generated file
+  printf '{"schema":"x"}\n' >"$fake/.dotfiles/old.jsonc"
+  ln -sfn "$fake/.dotfiles/old.jsonc" "$fake/.config/opencode/opencode.jsonc"
+  HOME="$fake" python3 "$REPO_ROOT/sourcecraft/update-models" >/dev/null
+  expect_ok "stowed symlink replaced by generated config" \
+    bash -c "[ ! -L '$fake/.config/opencode/opencode.jsonc' ] && [ -f '$fake/.config/opencode/opencode.jsonc' ]"
+  rm -rf "$fake"
+else
+  echo "  skip - python3 not installed"
+fi
+
 echo "== sanity: package lists =="
 for list in "$REPO_ROOT/libs.list" "$REPO_ROOT/termux/libs.list"; do
   label="${list#"$REPO_ROOT"/}"
@@ -124,9 +174,13 @@ expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \
 expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
   bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
 
-echo "== sanity: app-created configs backed up before stow =="
-expect_ok "ubuntu.sh backs up opencode.jsonc" \
-  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
+echo "== sanity: opencode.jsonc is generated, not stowed =="
+expect_ok "ubuntu.sh does not back up opencode.jsonc anymore" \
+  bash -c "! grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
+expect_ok "stow ignore covers opencode.jsonc" \
+  bash -c "grep -q 'opencode\\\\.jsonc' '$REPO_ROOT/.stow-local-ignore'"
+expect_ok "install.sh regenerates the provider config" \
+  bash -c "grep -q 'update-models' '$REPO_ROOT/sourcecraft/install.sh'"
 
 echo "== sanity: .stow-local-ignore covers opencode artifacts and .agents =="
 expect_ok "ignores node_modules" \
