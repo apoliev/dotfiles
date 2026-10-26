@@ -130,5 +130,5 @@ if [ -x "$DIR/update-models" ]; then
   "$DIR/update-models" || show_warn 'update-models failed — see its output\n'
 fi
 
-prompt_txt 'Models for opencode: run opencode and pick from sourcecraft/* — the list auto-updates from the src model catalog'
-prompt_txt 'zsh: plugin "sourcecraft" is enabled by default in .zshrc (inert until src CLI is installed)'
+prompt_txt "Models for opencode: run opencode and pick from sourcecraft/* — refresh the list with '$DIR/update-models'"
+prompt_txt "zsh plugin: bash $DIR/toggle.sh enable | disable | status"

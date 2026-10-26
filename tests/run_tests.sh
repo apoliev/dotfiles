@@ -190,12 +190,14 @@ expect_ok "ignores package.json" \
 expect_ok "ignores .agents" \
   bash -c "grep -q '^\.agents$' '$REPO_ROOT/.stow-local-ignore'"
 
-echo "== sanity: sourcecraft zsh plugin =="
-expect_ok "zsh/install.sh links sourcecraft plugin" \
-  bash -c "grep -q 'custom/plugins/sourcecraft' '$REPO_ROOT/zsh/install.sh'"
-expect_ok "sourcecraft plugin is enabled by default" \
-  bash -c "grep -Eq '^[[:space:]]+sourcecraft[[:space:]]*$' '$REPO_ROOT/.zshrc'"
-expect_ok "sourcecraft plugin guards on src binary" \
+echo "== sanity: sourcecraft zsh plugin is off by default =="
+expect_ok "toggle.sh is executable" \
+  bash -c "[ -x '$REPO_ROOT/sourcecraft/toggle.sh' ]"
+expect_ok "zsh/install.sh does not link sourcecraft plugin" \
+  bash -c "! grep -q 'custom/plugins/sourcecraft' '$REPO_ROOT/zsh/install.sh'"
+expect_ok "sourcecraft plugin is not enabled in .zshrc" \
+  bash -c "! grep -Eq '^[[:space:]]+sourcecraft[[:space:]]*$' '$REPO_ROOT/.zshrc'"
+expect_ok "sourcecraft plugin file guards on src binary" \
   bash -c "grep -q 'sourcecraft/bin/src' '$REPO_ROOT/zsh/custom/plugins/sourcecraft/sourcecraft.plugin.zsh'"
 
 echo "== sanity: sourcecraft install.sh =="
@@ -211,6 +213,65 @@ expect_ok "install.sh substitutes unit PATH (WSL browser detection)" \
   bash -c "grep -q '@PATH@|' '$REPO_ROOT/sourcecraft/install.sh' && grep -q 'cmd.exe' '$REPO_ROOT/sourcecraft/install.sh'"
 expect_ok "install.sh passes display env to unit (native Linux)" \
   bash -c "grep -q '@EXTRA_ENV@|' '$REPO_ROOT/sourcecraft/install.sh' && grep -q 'WAYLAND_DISPLAY' '$REPO_ROOT/sourcecraft/install.sh'"
+
+echo "== integration: toggle.sh disable =="
+if command -v python3 >/dev/null 2>&1; then
+  fake="$(mktemp -d)"
+  mkdir -p "$fake/.config/opencode" "$fake/.oh-my-zsh/custom/plugins" \
+    "$fake/.config/systemd/user" "$fake/.config/sourcecraft-ipc" "$fake/.cache/sourcecraft"
+  cat >"$fake/.config/opencode/opencode.jsonc" <<'JSON'
+{"$schema":"https://opencode.ai/config.json","provider":{"sourcecraft":{"name":"SourceCraft"},"sourcecraft-external":{"name":"External"},"custom":{"name":"Keep"}},"model":"custom/x"}
+JSON
+  ln -s "$REPO_ROOT/zsh/custom/plugins/sourcecraft" "$fake/.oh-my-zsh/custom/plugins/sourcecraft"
+  cat >"$fake/.zshrc" <<'ZRC'
+plugins=(
+  copy
+  qrcode
+  sourcecraft
+)
+
+plugins+=(zoxide)
+ZRC
+  printf 'unit\n' >"$fake/.config/systemd/user/sourcecraft-ipc.service"
+  printf 'key\n' >"$fake/.config/sourcecraft-ipc/key"
+  expect_ok "toggle disable exits 0" \
+    bash -c "HOME='$fake' '$REPO_ROOT/sourcecraft/toggle.sh' disable"
+  if HOME="$fake" python3 - <<'EOF' 2>/dev/null
+import json, os
+cfg = json.load(open(os.path.expanduser("~/.config/opencode/opencode.jsonc")))
+p = cfg["provider"]
+assert "sourcecraft" not in p and "sourcecraft-external" not in p
+assert p["custom"] == {"name": "Keep"}
+assert cfg["model"] == "custom/x"
+assert cfg["$schema"] == "https://opencode.ai/config.json"
+EOF
+  then ok "disable strips only sourcecraft providers"; else bad "disable provider strip"; fi
+  expect_ok "disable removes the systemd unit file" \
+    bash -c "[ ! -e '$fake/.config/systemd/user/sourcecraft-ipc.service' ]"
+  expect_ok "disable unlinks the omz plugin" \
+    bash -c "[ ! -e '$fake/.oh-my-zsh/custom/plugins/sourcecraft' ]"
+  expect_ok "disable removes the plugin from plugins=(...)" \
+    bash -c "! grep -Eq '^[[:space:]]+sourcecraft[[:space:]]*$' '$fake/.zshrc'"
+  expect_ok "disable keeps other plugins" \
+    bash -c "grep -q '  copy' '$fake/.zshrc' && grep -q 'plugins+=(zoxide)' '$fake/.zshrc'"
+  expect_ok "disable keeps data without --purge" \
+    bash -c "[ -f '$fake/.config/sourcecraft-ipc/key' ]"
+  HOME="$fake" "$REPO_ROOT/sourcecraft/toggle.sh" disable --purge >/dev/null
+  expect_ok "disable --purge removes key dir and model cache" \
+    bash -c "[ ! -e '$fake/.config/sourcecraft-ipc' ] && [ ! -e '$fake/.cache/sourcecraft' ]"
+  # a config with nothing but SourceCraft is removed entirely
+  cat >"$fake/.config/opencode/opencode.jsonc" <<'JSON'
+{"$schema":"https://opencode.ai/config.json","provider":{"sourcecraft":{"name":"SourceCraft"}}}
+JSON
+  HOME="$fake" "$REPO_ROOT/sourcecraft/toggle.sh" disable >/dev/null
+  expect_ok "only-sourcecraft config is removed entirely" \
+    bash -c "[ ! -e '$fake/.config/opencode/opencode.jsonc' ]"
+  expect_ok "status exits 0 on a clean machine" \
+    bash -c "HOME='$fake' '$REPO_ROOT/sourcecraft/toggle.sh' status"
+  rm -rf "$fake"
+else
+  echo "  skip - python3 not installed"
+fi
 
 echo
 echo "passed: $pass, failed: $fail"
