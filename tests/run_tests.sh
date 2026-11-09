@@ -63,12 +63,9 @@ if command -v stow >/dev/null 2>&1; then
   fake="$(mktemp -d)"
   # mirror stow_home(): ~/.config must pre-exist, or stow claims the whole dir
   mkdir -p "$fake/.config"
-  # opencode.jsonc is machine-generated in $HOME — stow must never link over it
-  # and stow_home() no longer backs it up
-  mkdir -p "$fake/.config/opencode"
-  printf '{"schema":"pre-existing"}\n' >"$fake/.config/opencode/opencode.jsonc"
   # opencode keeps its own artifacts in the real ~/.config/opencode; stow must
   # skip them (.stow-local-ignore), never back them up and never link over them
+  mkdir -p "$fake/.config/opencode"
   mkdir -p "$fake/.config/opencode/node_modules"
   printf '{}\n' >"$fake/.config/opencode/package.json"
   printf 'lock\n' >"$fake/.config/opencode/package-lock.json"
@@ -86,8 +83,12 @@ if command -v stow >/dev/null 2>&1; then
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
-  expect_ok "opencode.jsonc not stowed (machine-generated)" \
-    bash -c "[ -f '$fake/.config/opencode/opencode.jsonc' ] && [ ! -L '$fake/.config/opencode/opencode.jsonc' ]"
+  expect_ok "linked: opencode.jsonc" \
+    bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
+  expect_ok "linked: opencode cli.json" \
+    bash -c "[ -L '$fake/.config/opencode/cli.json' ] && [ '$fake/.config/opencode/cli.json' -ef '$REPO_ROOT/.config/opencode/cli.json' ]"
+  expect_ok "linked: opencode agents" \
+    bash -c "[ '$fake/.config/opencode/agents/architect.md' -ef '$REPO_ROOT/.config/opencode/agents/architect.md' ]"
   expect_ok "untouched: opencode artifacts" bash -c "
     [ -d '$fake/.config/opencode/node_modules' ] &&
     [ \"\$(cat '$fake/.config/opencode/package.json')\" = '{}' ] &&
@@ -119,11 +120,21 @@ expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \
 expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
   bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
 
-echo "== sanity: opencode.jsonc is machine-generated, not stowed =="
-expect_ok "ubuntu.sh does not back up opencode.jsonc anymore" \
-  bash -c "! grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
-expect_ok "stow ignore covers opencode.jsonc" \
-  bash -c "grep -q 'opencode\\\\.jsonc' '$REPO_ROOT/.stow-local-ignore'"
+echo "== sanity: opencode config is stowed, secrets are not =="
+expect_ok "ubuntu.sh backs up opencode.jsonc" \
+  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
+expect_ok "termux.sh backs up opencode.jsonc" \
+  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/termux.sh'"
+expect_ok "ubuntu.sh backs up cli.json" \
+  bash -c "grep -q 'backup_once.*opencode/cli.json' '$REPO_ROOT/scripts/ubuntu.sh'"
+expect_ok "termux.sh backs up cli.json" \
+  bash -c "grep -q 'backup_once.*opencode/cli.json' '$REPO_ROOT/scripts/termux.sh'"
+expect_ok "stow ignore covers service.json" \
+  bash -c "grep -q 'service.*json' '$REPO_ROOT/.stow-local-ignore'"
+expect_ok "gitignore covers service.json" \
+  bash -c "grep -q 'opencode/service.json' '$REPO_ROOT/.gitignore'"
+expect_ok "stow does not ignore opencode.jsonc" \
+  bash -c "! grep -q 'opencode.*jsonc' '$REPO_ROOT/.stow-local-ignore'"
 
 echo "== sanity: .stow-local-ignore covers opencode artifacts and .agents =="
 expect_ok "ignores node_modules" \

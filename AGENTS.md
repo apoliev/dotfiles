@@ -8,14 +8,20 @@ CI: `.github/workflows/ci.yml` (no build step).
 - Repo root **is** the stow package: `stow -d ~/.dotfiles -t "$HOME" .` symlinks
   top-level dotfiles (`.zshrc`, `.vimrc`, `.tmux.conf`, `.irbrc`, `.config/`) into `$HOME`.
 - `stow_home()` pre-creates `~/.config` (`mkdir -p`) so stow folds into it and
-  links only `.config/mise` — if `~/.config` didn't exist, stow would symlink the
-  whole directory into the repo and programs would write their configs into it.
+  links only entries from `.config/` (mise, opencode) — if `~/.config` didn't
+  exist, stow would symlink the whole directory into the repo and programs
+  would write their configs into it.
 - `.stow-local-ignore` excludes non-dotfiles from stowing. **Any new top-level
   file/dir that is not a dotfile must be added there**, or stow symlinks it into `$HOME`.
-  It also ignores `.agents` and opencode's runtime artifacts (`node_modules`,
-  `package*.json`, `opencode.jsonc`): opencode keeps its own copies in the real
-  `~/.config/opencode`, and stowing same-named entries over them aborts with
-  CONFLICT. Git-cleanliness for those paths lives in the root `.gitignore`.
+  It also ignores `.agents` and opencode's machine-local artifacts (`node_modules`,
+  `package*.json`, `service.json`): opencode keeps its own copies in the real
+  `~/.config/opencode`, and `service.json` holds a secret. Git-cleanliness for
+  those paths lives in the root `.gitignore`.
+- `~/.config/opencode/` is stowed: `cli.json` (TUI settings), `opencode.jsonc`
+  (server config, `default_agent: architect`) and `agents/*.md` (architect,
+  researcher, developer, reviewer). `service.json` stays machine-local.
+  `developer` and `reviewer` run on GLM-5.3-Flash; heavy or critical work
+  escalates manually to GLM-5.3 / DeepSeek V4 Pro.
 - `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`
   inside the container and stow targets the container `$HOME`, so stow and the
   install scripts can be exercised safely. It is stow-ignored like the rest.

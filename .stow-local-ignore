@@ -3,7 +3,7 @@
 .devcontainer
 .gitignore
 .github
-.config/opencode/opencode\.jsonc
+.config/opencode/service\.json
 AGENTS.md
 gnome
 libs.list
