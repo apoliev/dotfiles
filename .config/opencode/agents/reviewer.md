@@ -9,6 +9,30 @@ permissions:
   - action: shell
     resource: "*"
     effect: ask
+  - action: shell
+    resource: "rg *"
+    effect: allow
+  - action: shell
+    resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "git status *"
+    effect: allow
+  - action: shell
+    resource: "git diff *"
+    effect: allow
+  - action: shell
+    resource: "git show *"
+    effect: allow
+  - action: shell
+    resource: "git grep *"
+    effect: allow
+  - action: shell
+    resource: "git blame *"
+    effect: allow
+  - action: shell
+    resource: "git rev-parse *"
+    effect: allow
 ---
 
 You are a code reviewer. You review changes and verify behavior; you do not
