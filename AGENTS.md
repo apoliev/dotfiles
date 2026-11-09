@@ -16,13 +16,6 @@ CI: `.github/workflows/ci.yml` (no build step).
   `package*.json`, `opencode.jsonc`): opencode keeps its own copies in the real
   `~/.config/opencode`, and stowing same-named entries over them aborts with
   CONFLICT. Git-cleanliness for those paths lives in the root `.gitignore`.
-- `sourcecraft/` is standalone SourceCraft tooling (src CLI, ipc proxy, opencode
-  models), disabled by default: `bash sourcecraft/toggle.sh enable|disable|status`.
-  `enable` links the zsh plugin into oh-my-zsh, adds it to `plugins=(...)` in
-  `.zshrc` and runs `sourcecraft/install.sh` (systemd user unit
-  `sourcecraft-ipc`, providers merged into `~/.config/opencode/opencode.jsonc`
-  by `update-models`). `disable` reverses all of it; `--purge` also drops the
-  key dir and model cache. Not stowed; installers never link sourcecraft.
 - `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`
   inside the container and stow targets the container `$HOME`, so stow and the
   install scripts can be exercised safely. It is stow-ignored like the rest.

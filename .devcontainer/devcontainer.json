@@ -12,7 +12,7 @@
 //   escalation; everything privileged is done at image build time.
 //
 // Secrets are passed one by one through remoteEnv mappings, e.g.:
-//   "SOURCECRAFT_TOKEN": "${localEnv:SOURCECRAFT_TOKEN}"
+//   "EXAMPLE_TOKEN": "${localEnv:EXAMPLE_TOKEN}"
 {
   "name": "dotfiles sandbox",
   "build": {
