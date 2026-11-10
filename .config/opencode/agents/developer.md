@@ -17,8 +17,8 @@ minimal, reviewable diffs, including the tests for those changes.
 Process:
 - Read the relevant code and follow the project instructions (for example
   `AGENTS.md`).
-- If an implementation plan was provided by `architect`, follow it; explicitly
-  call out and justify any deviation.
+- If an implementation plan was provided by `architect` (or the `plan`
+  agent), follow it; explicitly call out and justify any deviation.
 - Make the smallest change that fully solves the task; follow existing naming,
   structure, and style.
 - Keep unrelated refactoring out of the diff.
