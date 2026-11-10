@@ -7,32 +7,17 @@ permissions:
     resource: "*"
     effect: deny
   - action: shell
-    resource: "*"
-    effect: ask
+    resource: "rm *"
+    effect: deny
   - action: shell
-    resource: "rg *"
-    effect: allow
+    resource: "git push *"
+    effect: deny
   - action: shell
-    resource: "git log *"
-    effect: allow
+    resource: "git reset *"
+    effect: deny
   - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: shell
-    resource: "git grep *"
-    effect: allow
-  - action: shell
-    resource: "git blame *"
-    effect: allow
-  - action: shell
-    resource: "git rev-parse *"
-    effect: allow
+    resource: "git clean *"
+    effect: deny
 ---
 
 You are a code reviewer. You review changes and verify behavior; you do not

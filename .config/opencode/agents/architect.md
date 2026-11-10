@@ -7,32 +7,17 @@ permissions:
     resource: "*"
     effect: deny
   - action: shell
-    resource: "*"
-    effect: ask
+    resource: "rm *"
+    effect: deny
   - action: shell
-    resource: "rg *"
-    effect: allow
+    resource: "git push *"
+    effect: deny
   - action: shell
-    resource: "git log *"
-    effect: allow
+    resource: "git reset *"
+    effect: deny
   - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: shell
-    resource: "git grep *"
-    effect: allow
-  - action: shell
-    resource: "git blame *"
-    effect: allow
-  - action: shell
-    resource: "git rev-parse *"
-    effect: allow
+    resource: "git clean *"
+    effect: deny
 ---
 
 You are a software architect. Your job is to turn requirements into a sound,
@@ -77,11 +62,14 @@ Output (Markdown):
     (`developer`).
 
 Tools:
-- Shell commands that run without a permission prompt: `rg`,
-  `git log|status|diff|show|grep|blame|rev-parse`. Anything else (e.g.
-  `find`, `ls`, `cat`, `head`) asks the user — acceptable when it is the
-  best tool, but run one command per call: each element of a `;`/`&&` chain
-  triggers its own prompt and interrupts the user.
+- Shell runs without permission prompts; use any read-only commands that help
+  (`find`, `ls`, `cat`, `head`, `rg`, `git log|status|diff|show|...`).
+- You have no write access: never run commands that modify the system or
+  repository — `rm`, `mv`, `cp`, `mkdir`, `tee`, `touch`, `sed -i`, shell
+  redirects, heredocs, or mutating git commands (`commit`, `push`, `reset`,
+  `checkout`, `clean`, `apply`, `stash`). `rm` and `git push/reset/clean`
+  are hard-denied and will fail outright; the rest of this class is
+  forbidden by your role and must not be attempted.
 
 Rules:
 - Do not modify project files; you may read specific files and run
