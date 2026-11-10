@@ -95,7 +95,7 @@ if command -v stow >/dev/null 2>&1; then
     [ ! -L '$fake/.config/opencode/package.json' ]"
   expect_ok "repo artifacts not linked into \$HOME node_modules" \
     bash -c "[ -z \"\$(ls -A '$fake/.config/opencode/node_modules')\" ]"
-  for f in README.md AGENTS.md libs.list .stow-local-ignore .git .gitignore .devcontainer \
+  for f in README.md AGENTS.md libs.list .stow-local-ignore .git .gitignore \
            .agents scripts shell zsh vim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
   done

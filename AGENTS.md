@@ -22,12 +22,6 @@ CI: `.github/workflows/ci.yml` (no build step).
   researcher, developer, reviewer). `service.json` stays machine-local.
   `developer` and `reviewer` run on GLM-5.3-Flash; heavy or critical work
   escalates manually to GLM-5.3 / DeepSeek V4 Pro.
-- `.devcontainer/` is the agent sandbox: the repo is bind-mounted at `~/.dotfiles`
-  inside the container and stow targets the container `$HOME`, so stow and the
-  install scripts can be exercised safely. It is stow-ignored like the rest.
-  Shell is bash; `sudo` is a no-op shim (`~/.local/bin/sudo` drops it and execs
-  the command) so scripts calling sudo don't die on the missing binary — apt
-  steps still fail honestly (packages belong to the image, not runtime).
 - Per-area dirs (`zsh/`, `vim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
   scripts symlink pieces into `~/.oh-my-zsh/custom`, `~/.local/lib`, `~/.vim`, `~/.tmux/plugins`.
 - `gnome/*.dconf` files are stored here only; no script applies them.

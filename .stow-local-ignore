@@ -1,6 +1,5 @@
 .git
 .agents
-.devcontainer
 .gitignore
 .github
 .config/opencode/service\.json
