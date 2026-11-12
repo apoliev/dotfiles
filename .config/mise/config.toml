@@ -1,5 +1,6 @@
 [tools]
 "aqua:YS-L/csvlens" = "latest"
+"aqua:ankitpokhrel/jira-cli" = "latest"
 bat = "latest"
 bat-extras = "latest"
 fd = "latest"
