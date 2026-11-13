@@ -83,12 +83,8 @@ if command -v stow >/dev/null 2>&1; then
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
-  expect_ok "linked: opencode.jsonc" \
-    bash -c "[ -L '$fake/.config/opencode/opencode.jsonc' ] && [ '$fake/.config/opencode/opencode.jsonc' -ef '$REPO_ROOT/.config/opencode/opencode.jsonc' ]"
   expect_ok "linked: opencode cli.json" \
     bash -c "[ -L '$fake/.config/opencode/cli.json' ] && [ '$fake/.config/opencode/cli.json' -ef '$REPO_ROOT/.config/opencode/cli.json' ]"
-  expect_ok "linked: opencode agents" \
-    bash -c "[ '$fake/.config/opencode/agents/architect.md' -ef '$REPO_ROOT/.config/opencode/agents/architect.md' ]"
   expect_ok "untouched: opencode artifacts" bash -c "
     [ -d '$fake/.config/opencode/node_modules' ] &&
     [ \"\$(cat '$fake/.config/opencode/package.json')\" = '{}' ] &&
@@ -121,10 +117,6 @@ expect_ok ".tmux.conf guards run -b tpm with TMUX_HEADLESS" \
   bash -c "grep -q 'TMUX_HEADLESS' '$REPO_ROOT/.tmux.conf'"
 
 echo "== sanity: opencode config is stowed, secrets are not =="
-expect_ok "ubuntu.sh backs up opencode.jsonc" \
-  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/ubuntu.sh'"
-expect_ok "termux.sh backs up opencode.jsonc" \
-  bash -c "grep -q 'backup_once.*opencode/opencode.jsonc' '$REPO_ROOT/scripts/termux.sh'"
 expect_ok "ubuntu.sh backs up cli.json" \
   bash -c "grep -q 'backup_once.*opencode/cli.json' '$REPO_ROOT/scripts/ubuntu.sh'"
 expect_ok "termux.sh backs up cli.json" \
@@ -133,8 +125,6 @@ expect_ok "stow ignore covers service.json" \
   bash -c "grep -q 'service.*json' '$REPO_ROOT/.stow-local-ignore'"
 expect_ok "gitignore covers service.json" \
   bash -c "grep -q 'opencode/service.json' '$REPO_ROOT/.gitignore'"
-expect_ok "stow does not ignore opencode.jsonc" \
-  bash -c "! grep -q 'opencode.*jsonc' '$REPO_ROOT/.stow-local-ignore'"
 
 echo "== sanity: .stow-local-ignore covers opencode artifacts and .agents =="
 expect_ok "ignores node_modules" \

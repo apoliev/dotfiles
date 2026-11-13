@@ -44,7 +44,6 @@ stow_home() {
   backup_once "$HOME/.tmux.conf"
   backup_once "$HOME/.vimrc"
   backup_once "$HOME/.config/opencode/cli.json"
-  backup_once "$HOME/.config/opencode/opencode.jsonc"
 
   # ~/.config must exist before stow runs — otherwise stow symlinks the whole
   # directory into the repo and programs write their configs into it

@@ -17,11 +17,9 @@ CI: `.github/workflows/ci.yml` (no build step).
   `package*.json`, `service.json`): opencode keeps its own copies in the real
   `~/.config/opencode`, and `service.json` holds a secret. Git-cleanliness for
   those paths lives in the root `.gitignore`.
-- `~/.config/opencode/` is stowed: `cli.json` (TUI settings), `opencode.jsonc`
-  (server config, `default_agent: architect`) and `agents/*.md` (architect,
-  researcher, developer, reviewer). `service.json` stays machine-local.
-  `developer` and `reviewer` run on GLM-5.3-Flash; heavy or critical work
-  escalates manually to GLM-5.3 / DeepSeek V4 Pro.
+- `~/.config/opencode/` is stowed: `cli.json` (TUI settings) only —
+  server config (`opencode.jsonc`) and agent definitions live machine-local,
+  outside this repo. `service.json` stays machine-local too.
 - Per-area dirs (`zsh/`, `vim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
   scripts symlink pieces into `~/.oh-my-zsh/custom`, `~/.local/lib`, `~/.vim`, `~/.tmux/plugins`.
 - `gnome/*.dconf` files are stored here only; no script applies them.
