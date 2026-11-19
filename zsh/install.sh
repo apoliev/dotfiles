@@ -7,6 +7,9 @@ DIR="$(dirname "$(readlink -f "$0")")"
 # shellcheck disable=SC1091
 source "$DIR/../shell/prompt_utils.sh"
 
+# Fail early with an install hint instead of dying halfway through
+require_cmds curl:curl git:git zsh:zsh || exit 1
+
 CUSTOM_DIR="$HOME/.oh-my-zsh/custom"
 
 # Oh My Zsh (downloaded to a file, executed explicitly with bash)

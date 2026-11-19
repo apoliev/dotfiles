@@ -7,6 +7,8 @@ REPO_ROOT="$DIR/.."
 
 source "$REPO_ROOT/shell/prompt_utils.sh"
 
+ALL_STEPS=(update packages chsh stow mise shell zsh vim tmux)
+
 # ---- Steps ---------------------------------------------------------------
 
 update_system() {
@@ -34,6 +36,9 @@ install_system_packages() {
 }
 
 install_mise() {
+  command -v curl >/dev/null 2>&1 ||
+    { show_error 'curl is required to download mise'; return 1; }
+
   local bin_dir="$HOME/.local/bin"
   local tmp_script="$HOME/.local/lib/mise-install.sh"
 
@@ -71,6 +76,10 @@ install_mise() {
   "$bin_dir/mise" install ||
     { show_error 'Failed to install mise tools'; return 1; }
 
+  prompt_txt 'Updating mise tools...'
+  "$bin_dir/mise" up ||
+    { show_error 'Failed to update mise tools'; return 1; }
+
   show_success "Success\n"
 }
 
@@ -89,6 +98,8 @@ set_default_shell() {
 }
 
 stow_home() {
+  require_cmds stow:stow || return 1
+
   prompt_txt 'Stowing dotfiles...'
 
   backup_once "$HOME/.zshrc"
@@ -110,22 +121,104 @@ stow_home() {
   show_success "Success\n"
 }
 
-run_template() {
-  local name="$1"
-  local script="$2"
-  prompt_txt "Loading ${name} configs..."
-  bash "$script"
+# ---- Dispatcher ----------------------------------------------------------
+
+usage() {
+  cat <<'EOF'
+Usage: bash scripts/ubuntu.sh [STEP...]
+
+Run the whole Ubuntu setup when called without arguments, or only the
+selected steps — handy on machines where some steps are not allowed.
+
+Steps:
+  update    apt update/upgrade/autoremove + snap refresh (needs sudo)
+  packages  install packages from libs.list               (needs sudo)
+  chsh      set zsh as the default shell                 (needs sudo)
+  stow      stow dotfiles into $HOME
+  mise      install mise + install/update tools from .config/mise
+  shell     link prompt_utils into ~/.local/lib
+  zsh       oh-my-zsh + plugins + theme
+  vim       vim-plug + theme + plugins
+  tmux      TPM + plugins
+  all       everything, in the default order
+  help      show this help
+EOF
+}
+
+have_sudo() {
+  command -v sudo >/dev/null 2>&1 || return 1
+  # Already validated in this run — sudo caches credentials for a while
+  [ "${SUDO_VALIDATED:-}" = "yes" ] && return 0
+  # Prompts for the password when needed; fails for users without sudo rights
+  if sudo -v; then SUDO_VALIDATED=yes; return 0; fi
+  return 1
+}
+
+run_step() {
+  case "$1" in
+    update)   update_system ;;
+    packages) install_system_packages ;;
+    chsh)     set_default_shell ;;
+    stow)     stow_home ;;
+    mise)     install_mise ;;
+    shell)    bash "$REPO_ROOT/shell/install.sh" ;;
+    zsh)      bash "$REPO_ROOT/zsh/install.sh" ;;
+    vim)      bash "$REPO_ROOT/vim/install.sh" ;;
+    tmux)     bash "$REPO_ROOT/tmux/install.sh" ;;
+  esac
 }
 
 # ---- Main ----------------------------------------------------------------
 
-update_system
-install_system_packages
-set_default_shell
-stow_home
-install_mise
+explicit=0
+steps=()
 
-run_template shell "$REPO_ROOT/shell/install.sh"
-run_template zsh "$REPO_ROOT/zsh/install.sh"
-run_template vim "$REPO_ROOT/vim/install.sh"
-run_template tmux "$REPO_ROOT/tmux/install.sh"
+if [ $# -eq 0 ]; then
+  steps=("${ALL_STEPS[@]}")
+else
+  explicit=1
+  for arg in "$@"; do
+    case "$arg" in
+      all) steps=("${ALL_STEPS[@]}") ;;
+      help|-h|--help) usage; exit 0 ;;
+      update|packages|chsh|stow|mise|shell|zsh|vim|tmux) steps+=("$arg") ;;
+      *) show_error "Unknown step: $arg"; usage; exit 1 ;;
+    esac
+  done
+fi
+
+failed=()
+skipped=()
+
+for step in "${steps[@]}"; do
+  # Sudo-only steps degrade to a skip when the user has no admin rights
+  case "$step" in
+    update|packages|chsh)
+      if ! have_sudo; then
+        if [ "$explicit" -eq 1 ]; then
+          show_error "Step '$step' needs admin rights (sudo)"
+          failed+=("$step")
+        else
+          show_warn "No admin rights — step '$step' skipped\n"
+          skipped+=("$step")
+        fi
+        continue
+      fi
+      ;;
+  esac
+
+  if run_step "$step"; then
+    :
+  else
+    failed+=("$step")
+  fi
+done
+
+echo
+if [ "${#failed[@]}" -gt 0 ]; then
+  show_error "Failed steps: ${failed[*]}"
+fi
+if [ "${#skipped[@]}" -gt 0 ]; then
+  show_warn "Skipped steps (no admin rights): ${skipped[*]}\n"
+fi
+[ "${#failed[@]}" -eq 0 ]

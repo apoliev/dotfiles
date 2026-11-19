@@ -58,6 +58,14 @@ expect_ok "symlink: rc 0, symlink untouched" bash -c "
 
 rm -rf "$t"
 
+echo "== unit: require_cmds =="
+expect_ok "all present: rc 0" bash -c "
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  require_cmds bash:bash grep:grep"
+expect_ok "missing: rc 1" bash -c "
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  if require_cmds bash:bash opencode-selftest-missing:pkgname; then exit 1; fi"
+
 echo "== integration: stow into fake \$HOME =="
 if command -v stow >/dev/null 2>&1; then
   fake="$(mktemp -d)"
@@ -109,6 +117,59 @@ for list in "$REPO_ROOT/libs.list" "$REPO_ROOT/termux/libs.list"; do
   expect_ok "exists and non-empty: $label" test -s "$list"
   expect_ok "no duplicates: $label" bash -c "! sort '$list' | uniq -d | grep -q ."
 done
+
+echo "== sanity: install scripts check their dependencies =="
+expect_ok "zsh/install.sh checks curl/git/zsh" \
+  bash -c "grep -q 'require_cmds curl:curl git:git zsh:zsh' '$REPO_ROOT/zsh/install.sh'"
+expect_ok "vim/install.sh checks curl/git/vim" \
+  bash -c "grep -q 'require_cmds curl:curl git:git vim:vim' '$REPO_ROOT/vim/install.sh'"
+expect_ok "tmux/install.sh checks git/tmux" \
+  bash -c "grep -q 'require_cmds git:git tmux:tmux' '$REPO_ROOT/tmux/install.sh'"
+
+echo "== sanity: step dispatchers =="
+t="$(mktemp -d)"
+if bash "$REPO_ROOT/scripts/ubuntu.sh" help >"$t/ubuntu.txt"; then
+  ok "ubuntu.sh help runs"
+else
+  bad "ubuntu.sh help runs"
+fi
+if bash "$REPO_ROOT/scripts/termux.sh" help >"$t/termux.txt"; then
+  ok "termux.sh help runs"
+else
+  bad "termux.sh help runs"
+fi
+for s in update packages chsh stow mise shell zsh vim tmux; do
+  expect_ok "ubuntu.sh help lists: $s" grep -qw "$s" "$t/ubuntu.txt"
+done
+for s in update packages chsh stow shell zsh vim tmux; do
+  expect_ok "termux.sh help lists: $s" grep -qw "$s" "$t/termux.txt"
+done
+rm -rf "$t"
+
+echo "== integration: dispatcher without admin rights =="
+# Fake $HOME + fake PATH with every binary except sudo/curl/git/vim/tmux:
+# sudo-only steps must be skipped with a warning, the rest must fail loudly.
+fb="$(mktemp -d)"
+fh="$(mktemp -d)"
+for d in /usr/bin /bin; do
+  [ -d "$d" ] || continue
+  for f in "$d"/*; do
+    ln -s "$f" "$fb/$(basename "$f")" 2>/dev/null || true
+  done
+done
+rm -f "$fb/sudo" "$fb/curl" "$fb/git" "$fb/vim" "$fb/tmux"
+if HOME="$fh" PATH="$fb" bash "$REPO_ROOT/scripts/ubuntu.sh" >"$fh/out.txt" 2>&1; then
+  rc=0
+else
+  rc=$?
+fi
+for s in update packages chsh; do
+  expect_ok "dispatcher skips without sudo: $s" grep -qF "step '$s' skipped" "$fh/out.txt"
+done
+expect_ok "dispatcher reports failed steps in order" \
+  grep -qF "Failed steps: mise zsh vim tmux" "$fh/out.txt"
+expect_ok "dispatcher exits 1 when steps fail" test "$rc" -eq 1
+rm -rf "$fb" "$fh"
 
 echo "== sanity: tpm headless fork-bomb guard =="
 expect_ok "install.sh sets TMUX_HEADLESS for tpm scripts" \

@@ -29,8 +29,17 @@ CI: `.github/workflows/ci.yml` (no build step).
 `scripts/ubuntu.sh` (apt/snap) and `scripts/termux.sh` (pkg) duplicate the same step
 order: update system → install packages from `libs.list` / `termux/libs.list` →
 set default shell (`chsh -s zsh`) → stow →
-[ubuntu only: install mise + `mise install`] → run `shell/zsh/vim/tmux` install scripts.
+[ubuntu only: install mise + `mise install` + `mise up`] → run `shell/zsh/vim/tmux` install scripts.
 
+- Both installers are step dispatchers: no arguments = everything in the
+  default order, otherwise only the listed steps (`bash scripts/ubuntu.sh stow zsh`,
+  `help` lists them; `all` forces the full run). Failed steps are collected and
+  reported at the end; sudo-only steps (`update`, `packages`, `chsh`) are skipped
+  with a warning when the account has no admin rights (an explicitly requested
+  sudo step counts as failed).
+- Area `install.sh` scripts are independent: each one checks its dependencies
+  up front via `require_cmds` (shell/prompt_utils.sh) and fails with an
+  `apt`/`pkg` install hint instead of dying halfway through.
 - **Mirror every installer change in both scripts.** Termux never gets mise
   (`.zshrc` guards the mise plugin with `$TERMUX_VERSION`).
 - Package lists are per-platform with different names (e.g. `gnupg2` vs `gnupg`).

@@ -7,6 +7,13 @@ DIR="$(dirname "$(readlink -f "$0")")"
 # shellcheck disable=SC1091
 source "$DIR/../shell/prompt_utils.sh"
 
+# Fail early with an install hint instead of dying halfway through
+require_cmds git:git tmux:tmux || exit 1
+
+# tmux-urlview shells out to urlview at run time; missing it is not fatal here
+command -v urlview >/dev/null 2>&1 ||
+  show_warn "urlview not found — tmux-urlview will not be able to open URLs\n"
+
 # Loading plugins
 tmux_plugin_dir="$HOME/.tmux/plugins/tpm"
 prompt_txt 'Loading plugins...'

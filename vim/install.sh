@@ -7,6 +7,9 @@ DIR="$(dirname "$(readlink -f "$0")")"
 # shellcheck disable=SC1091
 source "$DIR/../shell/prompt_utils.sh"
 
+# Fail early with an install hint instead of dying halfway through
+require_cmds curl:curl git:git vim:vim || exit 1
+
 # Loading vim-plug (idempotent)
 plug_file="$HOME/.vim/autoload/plug.vim"
 prompt_txt 'Loading vim-plug...'
