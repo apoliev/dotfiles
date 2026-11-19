@@ -51,6 +51,10 @@ Same step selection as on Ubuntu (without `mise`): `bash scripts/termux.sh stow 
 The installers never overwrite an existing config blindly:
 
 - On the first run, any existing real file is moved to `<name>.bak`.
+- The same applies to symlinks stow doesn't own (for example an absolute
+  `~/.zshrc` left behind by the oh-my-zsh installer): they are moved to
+  `<name>.bak` too, and stow recreates its own relative link on the next run
+  instead of failing with "existing target is not owned by stow".
 - On repeated runs, nothing is clobbered: if both the file and its `.bak`
   already exist, the installer skips it and lets `stow` fail safely so you can
   resolve the conflict manually.

@@ -30,9 +30,12 @@ else
     { show_error 'Failed to install Oh My Zsh'; exit 1; }
 
   # oh-my-zsh overwrites ~/.zshrc (even a stowed symlink) with its template —
-  # put the repo config back in place
+  # put the repo config back in place. The link must be RELATIVE, exactly as
+  # stow creates it: stow treats absolute symlinks as foreign and fails on
+  # the next run with "existing target is not owned by stow".
   rm -f "$HOME/.zshrc"
-  ln -s "$DIR/../.zshrc" "$HOME/.zshrc" ||
+  zsh_repo_rel="$(realpath --relative-to="$HOME" "$DIR/..")"
+  ln -sfn "$zsh_repo_rel/.zshrc" "$HOME/.zshrc" ||
     { show_error 'Failed to restore stowed ~/.zshrc'; exit 1; }
 fi
 

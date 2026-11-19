@@ -69,6 +69,13 @@ set default shell (`chsh -s zsh`) → stow →
 - Remote installers are downloaded to a file and run with explicit `bash` (never
   piped to a shell); the mise installer is SHA-256 verified against the GitHub
   release digest.
+- Symlinks that stow owns (`.zshrc`, `.vimrc`, …) must be created RELATIVE,
+  exactly the way stow does (`realpath --relative-to="$HOME"`): stow treats
+  absolute symlinks as foreign and fails on the next run with
+  "existing target is not owned by stow". The oh-my-zsh installer overwrites
+  `~/.zshrc` — `zsh/install.sh` re-links it relatively right after.
+- `backup_once` relocates foreign symlinks (absolute, or relative links not
+  pointing into the repo) to `.bak` as well, so the next stow run self-heals.
 - Installers never clobber: existing dotfiles are moved to `.bak` once
   (`backup_once` in shell/prompt_utils.sh); if file and `.bak` both exist the
   installer skips and lets stow fail safely.

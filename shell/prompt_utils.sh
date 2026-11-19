@@ -16,11 +16,38 @@ prompt_txt() {
   echo -e "\e[33m$1\e[0m"
 }
 
+# Repo root, derived from this file's real location (readlink -f resolves
+# the ~/.local/lib symlink installed by shell/install.sh).
+DOTFILES_ROOT="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
+
+# True when $1 is a symlink that stow considers its own: the link destination
+# is relative (stow never creates or accepts absolute links) and points into
+# the repo with the same lexical prefix stow computes from the link's dir.
+stow_owned_link() {
+  local target="$1"
+  local dest rel_root prefix
+  dest="$(readlink "$target")" || return 1
+
+  case "$dest" in
+    /*) return 1 ;;  # absolute links are never owned by stow
+  esac
+
+  rel_root="$(realpath --relative-to="$(dirname "$target")" "$DOTFILES_ROOT")" || return 1
+  prefix="${dest#"$rel_root"/}"
+  [ "$prefix" != "$dest" ]
+}
+
 backup_once() {
   local target="$1"
   local backup="${target}.bak"
 
-  if [ ! -e "$target" ] || [ -L "$target" ]; then
+  if [ -L "$target" ]; then
+    # Stow-owned links are kept (stow repairs its own broken ones). Foreign
+    # ones — absolute links left by installers, links into a moved repo —
+    # would make stow fail with "existing target is not owned by stow", so
+    # they are backed up like regular files.
+    stow_owned_link "$target" && return 0
+  elif [ ! -e "$target" ]; then
     return 0
   fi
 

@@ -52,9 +52,26 @@ expect_ok "file + .bak both exist: refuses (rc 1), both kept" bash -c "
   [ -e '$t/g' ] && [ -e '$t/g.bak' ]"
 
 ln -s /etc/hostname "$t/l"
-expect_ok "symlink: rc 0, symlink untouched" bash -c "
+owned_rel="$(realpath --relative-to "$t" "$REPO_ROOT")"
+
+expect_ok "stow-owned relative link: rc 0, untouched" bash -c "
+  ln -s '$owned_rel/README.md' '$t/owned'
   source '$REPO_ROOT/shell/prompt_utils.sh'
-  backup_once '$t/l' && [ -L '$t/l' ]"
+  backup_once '$t/owned' && [ -L '$t/owned' ] && [ ! -e '$t/owned.bak' ]"
+
+expect_ok "stow-owned dangling link: rc 0, untouched (stow repairs it)" bash -c "
+  ln -s '$owned_rel/nonexistent-file-xyz' '$t/owned_dangling'
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  backup_once '$t/owned_dangling' && [ -L '$t/owned_dangling' ]"
+
+expect_ok "absolute symlink: foreign, moved to .bak" bash -c "
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  backup_once '$t/l' && [ -L '$t/l.bak' ] && [ ! -e '$t/l' ]"
+
+expect_ok "relative foreign link: moved to .bak" bash -c "
+  ln -s elsewhere/x '$t/foreign'
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  backup_once '$t/foreign' && [ -L '$t/foreign.bak' ] && [ ! -e '$t/foreign' ]"
 
 rm -rf "$t"
 
@@ -149,15 +166,21 @@ rm -rf "$t"
 echo "== integration: dispatcher without admin rights =="
 # Fake $HOME + fake PATH with every binary except sudo/curl/git/vim/tmux:
 # sudo-only steps must be skipped with a warning, the rest must fail loudly.
+make_fake_bin() {
+  local dest="$1" d f
+  mkdir -p "$dest"
+  for d in /usr/bin /bin; do
+    [ -d "$d" ] || continue
+    for f in "$d"/*; do
+      ln -s "$f" "$dest/$(basename "$f")" 2>/dev/null || true
+    done
+  done
+  rm -f "$dest/sudo" "$dest/curl" "$dest/git" "$dest/vim" "$dest/tmux"
+}
+
 fb="$(mktemp -d)"
 fh="$(mktemp -d)"
-for d in /usr/bin /bin; do
-  [ -d "$d" ] || continue
-  for f in "$d"/*; do
-    ln -s "$f" "$fb/$(basename "$f")" 2>/dev/null || true
-  done
-done
-rm -f "$fb/sudo" "$fb/curl" "$fb/git" "$fb/vim" "$fb/tmux"
+make_fake_bin "$fb"
 if HOME="$fh" PATH="$fb" bash "$REPO_ROOT/scripts/ubuntu.sh" >"$fh/out.txt" 2>&1; then
   rc=0
 else
@@ -169,6 +192,26 @@ done
 expect_ok "dispatcher reports failed steps in order" \
   grep -qF "Failed steps: mise zsh vim tmux" "$fh/out.txt"
 expect_ok "dispatcher exits 1 when steps fail" test "$rc" -eq 1
+rm -rf "$fb" "$fh"
+
+echo "== integration: stow self-heals a foreign ~/.zshrc =="
+# Emulate what oh-my-zsh leaves behind after a fresh install: an absolute
+# ~/.zshrc symlink stow does not own (stow used to abort with
+# "existing target is not owned by stow" until it was deleted by hand).
+fb="$(mktemp -d)"
+fh="$(mktemp -d)"
+make_fake_bin "$fb"
+ln -s /nonexistent/old-repo/.zshrc "$fh/.zshrc"
+if HOME="$fh" PATH="$fb" bash "$REPO_ROOT/scripts/ubuntu.sh" stow >"$fh/out.txt" 2>&1; then
+  ok "stow succeeds over a foreign symlink"
+else
+  bad "stow succeeds over a foreign symlink"
+fi
+expect_ok "foreign .zshrc backed up" test -L "$fh/.zshrc.bak"
+expect_ok ".zshrc is now a relative stow link" bash -c "
+  d=\"\$(readlink '$fh/.zshrc')\" && [ -n \"\$d\" ] && [ \"\${d#/}\" = \"\$d\" ]"
+expect_ok ".zshrc resolves into the repo" \
+  bash -c "[ '$fh/.zshrc' -ef '$REPO_ROOT/.zshrc' ]"
 rm -rf "$fb" "$fh"
 
 echo "== sanity: tpm headless fork-bomb guard =="

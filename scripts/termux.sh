@@ -4,7 +4,8 @@ set -e
 
 DIR="$(dirname "$(readlink -f "$0")")"
 TERMUX_ROOT="$DIR/../termux"
-REPO_ROOT="$DIR/.."
+# Canonical path — stow gets a clean -d without a literal "/.." in it
+REPO_ROOT="$(cd "$DIR/.." && pwd)"
 
 source "$REPO_ROOT/shell/prompt_utils.sh"
 
