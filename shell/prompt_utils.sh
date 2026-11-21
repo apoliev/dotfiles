@@ -37,6 +37,21 @@ stow_owned_link() {
   [ "$prefix" != "$dest" ]
 }
 
+# True when $1 is an existing regular path that lives inside the repo even
+# though it is not itself a symlink: stow may have tree-folded a parent dir
+# (e.g. on a fresh machine ~/.config/opencode is one symlink to the repo
+# dir), so stowed files are reached through the fold and look like real
+# files. A path resolving outside the repo (incl. a moved repo copy) is
+# foreign.
+stow_owned_file() {
+  local resolved rel
+  resolved="$(realpath -e "$1")" || return 1
+  rel="$(realpath --relative-to="$DOTFILES_ROOT" "$resolved")" || return 1
+  case "$rel" in
+    ..|../*) return 1 ;;
+  esac
+}
+
 backup_once() {
   local target="$1"
   local backup="${target}.bak"
@@ -48,6 +63,11 @@ backup_once() {
     # they are backed up like regular files.
     stow_owned_link "$target" && return 0
   elif [ ! -e "$target" ]; then
+    return 0
+  elif stow_owned_file "$target"; then
+    # A regular file reached through a stow-folded parent dir IS the repo's
+    # own file: mv-ing it to .bak would rename it inside the repo (this is
+    # exactly what deleted .config/opencode/cli.json on a fresh machine).
     return 0
   fi
 

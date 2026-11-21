@@ -73,6 +73,30 @@ expect_ok "relative foreign link: moved to .bak" bash -c "
   source '$REPO_ROOT/shell/prompt_utils.sh'
   backup_once '$t/foreign' && [ -L '$t/foreign.bak' ] && [ ! -e '$t/foreign' ]"
 
+# Regression: on a fresh machine stow tree-folds ~/.config/opencode into a
+# symlink to the repo dir, so cli.json is reached through the fold and looks
+# like a regular file. backup_once must NOT mv it — that renamed the repo's
+# own file to cli.json.bak and git showed it as deleted (Termux bug).
+fold_repo="$(mktemp -d)"
+fold_home="$(mktemp -d)"
+fold_new="$(mktemp -d)"
+mkdir -p "$fold_repo/.config/opencode" "$fold_home/.config"
+printf '{}\n' >"$fold_repo/.config/opencode/cli.json"
+ln -s "$fold_repo/.config/opencode" "$fold_home/.config/opencode"
+expect_ok "folded-dir file resolving into the repo: rc 0, untouched" bash -c "
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  DOTFILES_ROOT='$fold_repo'
+  backup_once '$fold_home/.config/opencode/cli.json' &&
+    [ -e '$fold_repo/.config/opencode/cli.json' ] &&
+    [ ! -e '$fold_repo/.config/opencode/cli.json.bak' ]"
+expect_ok "folded-dir file resolving outside the repo: foreign, moved to .bak" bash -c "
+  source '$REPO_ROOT/shell/prompt_utils.sh'
+  DOTFILES_ROOT='$fold_new'
+  backup_once '$fold_home/.config/opencode/cli.json' &&
+    [ -e '$fold_repo/.config/opencode/cli.json.bak' ] &&
+    [ ! -e '$fold_repo/.config/opencode/cli.json' ]"
+rm -rf "$fold_repo" "$fold_home" "$fold_new"
+
 rm -rf "$t"
 
 echo "== unit: require_cmds =="
@@ -124,6 +148,29 @@ if command -v stow >/dev/null 2>&1; then
   [ "$test_nm" -eq 1 ] && rm -rf "$repo_nm"
   stow -D -d "$REPO_ROOT" -t "$fake" .
   rm -rf "$fake"
+else
+  echo "  skip - stow not installed"
+fi
+
+echo "== integration: stow fold + backup_once (fresh-machine regression) =="
+# On a fresh machine nothing pre-creates ~/.config/opencode, so stow
+# tree-folds it into a single symlink to the repo dir. backup_once must then
+# recognize cli.json as the repo's own file reached through the fold and
+# never mv it to .bak — that renamed cli.json inside the repo and git showed
+# it as deleted (Termux).
+if command -v stow >/dev/null 2>&1; then
+  fold="$(mktemp -d)"
+  mkdir -p "$fold/.config"
+  expect_ok "stow succeeds without a pre-made opencode dir" stow -d "$REPO_ROOT" -t "$fold" .
+  expect_ok "folded: .config/opencode is a symlink into the repo" \
+    bash -c "[ -L '$fold/.config/opencode' ]"
+  expect_ok "backup_once keeps folded cli.json (rc 0, no .bak anywhere)" bash -c "
+    source '$REPO_ROOT/shell/prompt_utils.sh'
+    backup_once '$fold/.config/opencode/cli.json' &&
+      [ '$fold/.config/opencode/cli.json' -ef '$REPO_ROOT/.config/opencode/cli.json' ] &&
+      [ ! -e '$REPO_ROOT/.config/opencode/cli.json.bak' ]"
+  stow -D -d "$REPO_ROOT" -t "$fold" .
+  rm -rf "$fold"
 else
   echo "  skip - stow not installed"
 fi

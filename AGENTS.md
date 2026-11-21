@@ -76,6 +76,9 @@ set default shell (`chsh -s zsh`) → stow →
   `~/.zshrc` — `zsh/install.sh` re-links it relatively right after.
 - `backup_once` relocates foreign symlinks (absolute, or relative links not
   pointing into the repo) to `.bak` as well, so the next stow run self-heals.
+  Paths resolving INSIDE the repo (real files reached through a stow
+  tree-fold, e.g. `~/.config/opencode` → repo dir on a fresh machine) are
+  kept: mv-ing them to `.bak` renames them inside the repo.
 - Installers never clobber: existing dotfiles are moved to `.bak` once
   (`backup_once` in shell/prompt_utils.sh); if file and `.bak` both exist the
   installer skips and lets stow fail safely.
