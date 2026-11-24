@@ -1,4 +1,5 @@
 [tools]
+"aqua:Epistates/treemd" = "latest"
 "aqua:YS-L/csvlens" = "latest"
 "aqua:ankitpokhrel/jira-cli" = "latest"
 bat = "latest"
