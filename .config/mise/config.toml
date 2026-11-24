@@ -3,6 +3,7 @@
 "aqua:ankitpokhrel/jira-cli" = "latest"
 bat = "latest"
 bat-extras = "latest"
+cargo-binstall = "latest"
 fd = "latest"
 fzf = "latest"
 gh = "latest"
@@ -15,6 +16,7 @@ opencode = "latest"
 python = "latest"
 ripgrep = "latest"
 ruby = "latest"
+rust = "latest"
 zoxide = "latest"
 
 [settings]
