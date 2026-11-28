@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$DIR/.." && pwd)"
 
 source "$REPO_ROOT/shell/prompt_utils.sh"
 
-ALL_STEPS=(update packages chsh stow mise shell zsh vim tmux)
+ALL_STEPS=(update packages chsh stow mise shell zsh vim nvim tmux)
 
 # ---- Steps ---------------------------------------------------------------
 
@@ -108,6 +108,7 @@ stow_home() {
   backup_once "$HOME/.vimrc"
   backup_once "$HOME/.irbrc"
   backup_once "$HOME/.config/opencode/cli.json"
+  backup_once "$HOME/.config/nvim/init.lua"
 
   # ~/.config must exist before stow runs — otherwise stow symlinks the whole
   # directory into the repo and programs write their configs into it
@@ -140,6 +141,7 @@ Steps:
   shell     link prompt_utils into ~/.local/lib
   zsh       oh-my-zsh + plugins + theme
   vim       vim-plug + theme + plugins
+  nvim      lazy.nvim plugins + LSP servers (mason)
   tmux      TPM + plugins
   all       everything, in the default order
   help      show this help
@@ -165,6 +167,7 @@ run_step() {
     shell)    bash "$REPO_ROOT/shell/install.sh" ;;
     zsh)      bash "$REPO_ROOT/zsh/install.sh" ;;
     vim)      bash "$REPO_ROOT/vim/install.sh" ;;
+    nvim)     bash "$REPO_ROOT/nvim/install.sh" ;;
     tmux)     bash "$REPO_ROOT/tmux/install.sh" ;;
   esac
 }
@@ -182,7 +185,7 @@ else
     case "$arg" in
       all) steps=("${ALL_STEPS[@]}") ;;
       help|-h|--help) usage; exit 0 ;;
-      update|packages|chsh|stow|mise|shell|zsh|vim|tmux) steps+=("$arg") ;;
+      update|packages|chsh|stow|mise|shell|zsh|vim|nvim|tmux) steps+=("$arg") ;;
       *) show_error "Unknown step: $arg"; usage; exit 1 ;;
     esac
   done

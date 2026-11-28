@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y shellcheck stow zsh
 
       - name: Shellcheck
-        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh tmux/install.sh tests/run_tests.sh
+        run: shellcheck scripts/*.sh shell/*.sh zsh/install.sh vim/install.sh nvim/install.sh tmux/install.sh tests/run_tests.sh
 
       - name: Tests
         run: bash tests/run_tests.sh
@@ -40,6 +40,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y stow zsh vim tmux
 
+      # nvim + tree-sitter CLI + go from mise, exactly like a real machine:
+      # nvim-treesitter (main branch) needs nvim >= 0.12 and tree-sitter-cli;
+      # mason builds gopls from source, which needs the go toolchain
+      - name: Install Neovim, tree-sitter CLI and go
+        run: |
+          curl -fsSL https://mise.run | bash
+          "$HOME/.local/bin/mise" install neovim tree-sitter go
+          echo "$HOME/.local/share/mise/shims" >> "$GITHUB_PATH"
+
       - name: Stow into $HOME
         run: stow -d . -t "$HOME" .
 
@@ -48,6 +57,7 @@ jobs:
           bash shell/install.sh
           bash zsh/install.sh
           bash vim/install.sh
+          bash nvim/install.sh
           bash tmux/install.sh
 
       - name: Assert installed artifacts
@@ -65,6 +75,13 @@ jobs:
           test -d "$HOME/.vim/pack/josuegaleas/start/jay/.git"
           test -d "$HOME/.tmux/plugins/tpm/.git"
           test -d "$HOME/.tmux/plugins/tmux-sensible/.git"
+          test -d "$HOME/.local/share/nvim/lazy/lazy.nvim"
+          test -d "$HOME/.local/share/nvim/lazy/tokyonight.nvim"
+          test -f "$HOME/.local/share/nvim/site/parser/ruby.so"
+          test -x "$HOME/.local/share/nvim/mason/bin/gopls"
+          test -x "$HOME/.local/share/nvim/mason/bin/ruby-lsp"
+          test -x "$HOME/.local/share/nvim/mason/bin/pyright-langserver"
+          test -x "$HOME/.local/share/nvim/mason/bin/typescript-language-server"
 
       - name: Kill tmux server
         run: tmux kill-server 2>/dev/null || true

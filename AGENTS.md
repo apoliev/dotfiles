@@ -20,7 +20,10 @@ CI: `.github/workflows/ci.yml` (no build step).
 - `~/.config/opencode/` is stowed: `cli.json` (TUI settings) only —
   server config (`opencode.jsonc`) and agent definitions live machine-local,
   outside this repo. `service.json` stays machine-local too.
-- Per-area dirs (`zsh/`, `vim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
+- `~/.config/nvim/` is stowed: the whole Neovim config (`init.lua` + `lua/`).
+  lazy.nvim writes `lazy-lock.json` into it at runtime — gitignored. Plugin
+  state lives in `~/.local/share/nvim` / `~/.local/state/nvim` (machine-local).
+- Per-area dirs (`zsh/`, `vim/`, `nvim/`, `tmux/`, `shell/`) are NOT stowed — their `install.sh`
   scripts symlink pieces into `~/.oh-my-zsh/custom`, `~/.local/lib`, `~/.vim`, `~/.tmux/plugins`.
 - `gnome/*.dconf` files are stored here only; no script applies them.
 
@@ -29,7 +32,7 @@ CI: `.github/workflows/ci.yml` (no build step).
 `scripts/ubuntu.sh` (apt/snap) and `scripts/termux.sh` (pkg) duplicate the same step
 order: update system → install packages from `libs.list` / `termux/libs.list` →
 set default shell (`chsh -s zsh`) → stow →
-[ubuntu only: install mise + `mise install` + `mise up`] → run `shell/zsh/vim/tmux` install scripts.
+[ubuntu only: install mise + `mise install` + `mise up`] → run `shell/zsh/vim/nvim/tmux` install scripts.
 
 - Both installers are step dispatchers: no arguments = everything in the
   default order, otherwise only the listed steps (`bash scripts/ubuntu.sh stow zsh`,
@@ -41,11 +44,12 @@ set default shell (`chsh -s zsh`) → stow →
   up front via `require_cmds` (shell/prompt_utils.sh) and fails with an
   `apt`/`pkg` install hint instead of dying halfway through.
 - **Mirror every installer change in both scripts.** Termux never gets mise
-  (`.zshrc` guards the mise plugin with `$TERMUX_VERSION`).
+  (`.zshrc` guards the mise plugin with `$TERMUX_VERSION`); nvim comes from
+  `pkg install neovim` there (`termux/libs.list`), from mise on Ubuntu.
 - Package lists are per-platform with different names (e.g. `gnupg2` vs `gnupg`).
   Ubuntu system packages go in root `libs.list`, Termux in `termux/libs.list`.
-- CLI tools (bat, fd, fzf, jq, ripgrep, node, python, ruby, opencode, …) come from
-  `.config/mise/config.toml`, **not** libs.list.
+- CLI tools (bat, fd, fzf, jq, ripgrep, node, python, ruby, neovim, go,
+  tree-sitter, opencode, …) come from `.config/mise/config.toml`, **not** libs.list.
 - Area `install.sh` scripts must stay idempotent: skip existing installs,
   `git pull --ff-only` vendor checkouts, `rm -rf` + `ln -s` for our own links.
 
@@ -60,6 +64,14 @@ set default shell (`chsh -s zsh`) → stow →
   New oh-my-zsh plugins must also be added to `plugins=(...)` in `.zshrc`.
   A fresh omz install overwrites `~/.zshrc` with its template — `zsh/install.sh`
   re-links the stowed one right after.
+- nvim: lazy.nvim self-bootstraps into `~/.local/share/nvim` on first launch;
+  `nvim/install.sh` only runs headless `+Lazy! sync` + `+MasonInstallAll`
+  (idempotent). The config lives in `.config/nvim/` (stowed). LSP servers
+  (ruby-lsp, gopls, pyright, typescript-language-server) install via mason;
+  treesitter parsers compile on first run and need nvim >= 0.12 + the
+  `tree-sitter` CLI (both from mise) — older nvim gets a minimal fallback.
+  UI icons (lualine, neo-tree, diffview, which-key, trouble) need a Nerd
+  Font in the CLIENT terminal (DejaVu Sans Mono NF; servers don't need it).
 
 ## Script conventions
 

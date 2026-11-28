@@ -132,6 +132,8 @@ if command -v stow >/dev/null 2>&1; then
   done
   expect_ok "not hijacked: .config" bash -c "[ -d '$fake/.config' ] && [ ! -L '$fake/.config' ]"
   expect_ok "linked: .config/mise" bash -c "[ '$fake/.config/mise/config.toml' -ef '$REPO_ROOT/.config/mise/config.toml' ]"
+  expect_ok "linked: .config/nvim" \
+    bash -c "[ -L '$fake/.config/nvim' ] && [ '$fake/.config/nvim/init.lua' -ef '$REPO_ROOT/.config/nvim/init.lua' ]"
   expect_ok "linked: opencode cli.json" \
     bash -c "[ -L '$fake/.config/opencode/cli.json' ] && [ '$fake/.config/opencode/cli.json' -ef '$REPO_ROOT/.config/opencode/cli.json' ]"
   expect_ok "untouched: opencode artifacts" bash -c "
@@ -141,7 +143,7 @@ if command -v stow >/dev/null 2>&1; then
   expect_ok "repo artifacts not linked into \$HOME node_modules" \
     bash -c "[ -z \"\$(ls -A '$fake/.config/opencode/node_modules')\" ]"
   for f in README.md AGENTS.md libs.list .stow-local-ignore .git .gitignore \
-           .agents scripts shell zsh vim tmux termux gnome tests .github; do
+           .agents scripts shell zsh vim nvim tmux termux gnome tests .github; do
     expect_ok "not leaked: $f" bash -c "[ ! -e '$fake/$f' ] && [ ! -L '$fake/$f' ]"
   done
   [ "$test_pj" -eq 1 ] && rm -f "$repo_pj"
@@ -187,6 +189,8 @@ expect_ok "zsh/install.sh checks curl/git/zsh" \
   bash -c "grep -q 'require_cmds curl:curl git:git zsh:zsh' '$REPO_ROOT/zsh/install.sh'"
 expect_ok "vim/install.sh checks curl/git/vim" \
   bash -c "grep -q 'require_cmds curl:curl git:git vim:vim' '$REPO_ROOT/vim/install.sh'"
+expect_ok "nvim/install.sh checks git/nvim" \
+  bash -c "grep -q 'require_cmds git:git nvim:neovim' '$REPO_ROOT/nvim/install.sh'"
 expect_ok "tmux/install.sh checks git/tmux" \
   bash -c "grep -q 'require_cmds git:git tmux:tmux' '$REPO_ROOT/tmux/install.sh'"
 
@@ -202,10 +206,10 @@ if bash "$REPO_ROOT/scripts/termux.sh" help >"$t/termux.txt"; then
 else
   bad "termux.sh help runs"
 fi
-for s in update packages chsh stow mise shell zsh vim tmux; do
+for s in update packages chsh stow mise shell zsh vim nvim tmux; do
   expect_ok "ubuntu.sh help lists: $s" grep -qw "$s" "$t/ubuntu.txt"
 done
-for s in update packages chsh stow shell zsh vim tmux; do
+for s in update packages chsh stow shell zsh vim nvim tmux; do
   expect_ok "termux.sh help lists: $s" grep -qw "$s" "$t/termux.txt"
 done
 rm -rf "$t"
@@ -222,7 +226,7 @@ make_fake_bin() {
       ln -s "$f" "$dest/$(basename "$f")" 2>/dev/null || true
     done
   done
-  rm -f "$dest/sudo" "$dest/curl" "$dest/git" "$dest/vim" "$dest/tmux"
+  rm -f "$dest/sudo" "$dest/curl" "$dest/git" "$dest/vim" "$dest/nvim" "$dest/tmux"
 }
 
 fb="$(mktemp -d)"
@@ -237,7 +241,7 @@ for s in update packages chsh; do
   expect_ok "dispatcher skips without sudo: $s" grep -qF "step '$s' skipped" "$fh/out.txt"
 done
 expect_ok "dispatcher reports failed steps in order" \
-  grep -qF "Failed steps: mise zsh vim tmux" "$fh/out.txt"
+  grep -qF "Failed steps: mise zsh vim nvim tmux" "$fh/out.txt"
 expect_ok "dispatcher exits 1 when steps fail" test "$rc" -eq 1
 rm -rf "$fb" "$fh"
 

@@ -7,6 +7,7 @@ AGENTS.md
 gnome
 libs.list
 node_modules
+^[./]*nvim(/|$)
 package-lock.json
 package.json
 README.md

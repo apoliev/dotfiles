@@ -3,3 +3,5 @@
 .config/opencode/package-lock.json
 .config/opencode/bun.lock
 .config/opencode/service.json
+# lazy.nvim writes its lockfile into the stowed config dir; machine-local
+.config/nvim/lazy-lock.json

@@ -11,6 +11,7 @@ lnav
 make
 ncdu
 nmap
+neovim
 root-repo
 rsync
 stow

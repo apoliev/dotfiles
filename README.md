@@ -24,9 +24,9 @@ bash scripts/ubuntu.sh all            # everything, in the default order
 
 Steps that need `sudo` (`update`, `packages`, `chsh`) are skipped with a
 warning when the account has no admin rights. The per-area install scripts
-(`zsh/install.sh`, `vim/install.sh`, `tmux/install.sh`) check their
-dependencies up front and print the exact install command if something is
-missing.
+(`zsh/install.sh`, `vim/install.sh`, `nvim/install.sh`, `tmux/install.sh`)
+check their dependencies up front and print the exact install command if
+something is missing.
 
 ### Termux
 
@@ -44,7 +44,7 @@ Same step selection as on Ubuntu (without `mise`): `bash scripts/termux.sh stow 
   official checksum verified before running) and the tools from
   `.config/mise/config.toml` (`mise install` + `mise up` to update them)
 - Stows your dotfiles into `$HOME` via [GNU Stow](https://www.gnu.org/software/stow/)
-- Loads shell/zsh/vim/tmux templates and plugins
+- Loads shell/zsh/vim/nvim/tmux templates and plugins
 
 ## Safety
 
